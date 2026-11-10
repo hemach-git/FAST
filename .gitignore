@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+/data/
+logs/
+evals/results/tmp/
+*.db
+.venv/
+~$*
+evals/results/run_*.json

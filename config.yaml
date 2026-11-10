@@ -1,0 +1,64 @@
+# FAST - Floor Answers from Standards and Technical documents
+# Governance: this file is the app/model config of record. A snapshot is written per run.
+app:
+  name: FAST
+  version: 0.1.0
+  data_label: "SYNTHETIC DATA - for demonstration only"
+
+llm:
+  provider: mock            # mock | anthropic   (env LLM_PROVIDER overrides)
+  model: claude-sonnet-5-5  # env LLM_MODEL overrides; ignored by mock
+  max_tokens: 800
+  temperature: 0.0
+  timeout_s: 20
+  max_retries: 1
+
+routing:
+  categories: [safety, maintenance, quality]
+  min_confidence: 0.35      # below this -> broad search across all sources
+  secondary_ratio: 0.6      # include another category if its score >= ratio * top score
+  rule_weight: 0.5          # blend of keyword rules vs classifier score
+
+retrieval:
+  top_k_per_category: 4
+  max_context_chunks: 8
+  max_chunk_chars: 1200
+  abstain_min_score: 3.0    # BM25 score of best chunk below this -> abstain
+  min_query_coverage: 0.3   # fraction of query terms that must appear in best chunk
+
+guardrails:
+  min_question_chars: 3
+  max_question_chars: 500
+  max_doc_chars: 20000
+
+emergency:
+  contact: "Plant emergency line ext. 5555"
+  keywords: [fire, smoke, injured, injury, bleeding, unconscious, gas leak, explosion, electrocuted, electric shock, collapsed, trapped, chemical spill]
+
+equipment:
+  - Press Line 2
+  - CNC-04
+  - Conveyor C3
+  - Compressor AC-2
+  - Robot Cell R7
+  - Paint Booth 1
+  - Forklift
+  - Weld Shop
+  - Assembly Line A
+
+# ---- v2 multi-agent layer (active only when llm.provider != mock) ----
+agents:
+  mode: multi_agent         # multi_agent | pipeline (rule-based fallback)
+  prompt_version: "v2.0"
+  timeout_s: 25
+  token_budget: 12000       # total tokens (in+out) per question across all agents
+  min_clarify_confidence: 0.5
+  router:      { model: gpt-4o-mini, max_tokens: 350 }
+  specialist:  { model: gpt-4o-mini, max_tokens: 700, max_steps: 3 }
+  synthesizer: { model: gpt-4o-mini, max_tokens: 900 }
+
+auth:
+  enabled: true              # false (or FAST_AUTH=off) shows the old role selector, for local development only
+  min_password_length: 10
+  max_failed_attempts: 5
+  lockout_minutes: 15
