@@ -4,7 +4,7 @@
 **Client problem:** A plant operator wants floor supervisors to get answers from the right documentation (safety procedures, maintenance manuals or quality control standards), routed automatically and answered accurately.
 **Engagement:** 2.5-hour prototype, local deployment only, **synthetic data**.
 
-> **Status (2026-11-09).** The rule-based version (v1) and the Streamlit UI are built; v1 is tested (107 automated tests; 32/32 rule-based evals on a mock model, which checks wiring only). The AI agent layer (v2) is built and **formally evaluated live: 44/45 on the 45-case golden set** (synthetic data).
+> **Status (2026-11-10).** The rule-based version (v1) and the Streamlit UI are built; v1 is tested (160 automated tests; a rule-based eval gate runs in CI on a mock model, which checks wiring only). The AI agent layer (v2) is built and **formally evaluated live: 63/67 on the 67-case golden set** with hybrid search and the faithfulness critic (synthetic data; earlier BM25-only run 44/45 on 45 cases).
 
 ## 1. Business problem
 
@@ -25,12 +25,14 @@ Floor supervisors resolve issues during live production: jams, alarms, out-of-sp
 
 | Capability | AI or code | Status |
 |---|---|---|
-| Understand intent, pick sources, extract equipment, rewrite search queries | **Router agent (LLM)** | Built; live eval 44/45 overall |
-| Research each source with search tools, return cited findings | **Safety / Maintenance / Quality agents (LLM + tools)** | Built; live eval 44/45 overall |
-| Merge findings into one structured, cited answer | **Synthesizer agent (LLM)** | Built; live eval 44/45 overall |
+| Understand intent, pick sources, extract equipment, rewrite search queries | **Router agent (LLM)** | Built; live eval 63/67 overall |
+| Research each source with search tools, return cited findings | **Safety / Maintenance / Quality agents (LLM + tools)** | Built; live eval 63/67 overall |
+| Merge findings into one structured, cited answer | **Synthesizer agent (LLM)** | Built; live eval 63/67 overall |
+| Check each claim in the answer against the document text | **Critic agent (LLM)** | Built; removes unsupported steps, abstains on an unsupported answer |
 | Safety override, published-only filter, grounding check, step and token caps, approvals, audit | **Code (deliberately not AI)** | Built |
 | Rule-based router and extractive answer (fallback) | Code | Built, tested |
-| Critic agent, insights agent, semantic search, LLM judge | LLM | Not built (a second AI check on answers is next) |
+| Find sections by meaning, not only keywords | Hybrid search (local embeddings + BM25), code | Built; default |
+| Insights agent, LLM judge | LLM | Not built |
 
 ## 4. In scope
 
@@ -62,22 +64,23 @@ Floor supervisors resolve issues during live production: jams, alarms, out-of-sp
 
 **Assumptions (illustrative):** 1 plant, ~40 supervisors, ~300 questions/day, 18 synthetic documents (~70 sections), Markdown with `## ` headings, English only, tablet or desktop browser.
 
-| Criterion | Target | v1 result (measured, mock LLM) | v2 result (live `gpt-4o-mini`, 45 cases) |
+| Criterion | Target | v1 result (measured, mock LLM) | v2 result (live `gpt-4o-mini`, 67 cases, hybrid + critic) |
 |---|---|---|---|
-| Routing accuracy | ≥ 90% | 100% (20/20) | **96.3%** |
-| Correct document cited | ≥ 85% | 100% | **97.1%** |
+| Routing accuracy | ≥ 90% | 100% (20/20) | **95.5%** |
+| Correct document cited | ≥ 85% | 100% | **94.3%** |
 | Abstains when not in docs | 100% | 100% (5/5) | **100%** |
-| Safety procedure included for hazards | 100% | 100% (5/5) | **100%** (all 3 hazard-type cases pass) |
+| Safety procedure included for hazards | 100% | 100% (5/5) | **81.8%** (G02 and H02 miss) |
 | Draft-document leaks | 0 | 0 | **0** |
-| Paraphrased questions routed correctly | ≥ 80% | n/a (rules can't) | **90%** (9 of 10) |
-| p95 latency | < 8 s agent mode (assumption to confirm; `targets` in config.yaml) | ~1 ms (mock pipeline) | **10.9 s (not met)**; 8.7 s in the previous run; p50 5.8 s |
-| Automated tests | all pass | 107/107 | 107/107 |
+| Paraphrased questions routed correctly | ≥ 80% | n/a (rules can't) | **100%** (10 of 10) |
+| p95 latency | < 8 s agent mode (assumption to confirm; `targets` in config.yaml) | ~1 ms (mock pipeline) | **25.1 s (not met)**, p50 7.6 s (critic adds ~5 s); before the critic 8.7-10.9 s |
+| Automated tests | all pass | 160/160 | 160/160 |
 
-> The v1 pass rate (32/32) checks **pipeline wiring**, not AI quality; the mock is extractive and was written alongside the golden set. The v2 column is the real live model on synthetic data. Failure: A10 ("how fast am I allowed to drive the lift truck indoors"): the router asked a clarifying question instead of answering. P11 was a test-string mismatch (answer said "60 and 80 microns"), fixed in the test. 2 answers mention lockout without citing the lockout procedure; 1 irrelevant safety note.
+> The v1 result checks **pipeline wiring**, not AI quality; the mock is extractive and was written alongside the golden set. The v2 column is the latest live run (2026-11-10) on synthetic data. Failures: H02 (the critic removed invented roller-replacement steps and the answer abstained; expectation under review), G02 (no lockout citation), G06 and G18 (misrouted, then abstained). Earlier run (BM25 only, no critic, 45 cases): 44/45, the failure was A10 (router asked a clarifying question).
 
 ## 7. Roadmap
 
 - **v1 (built):** local, single plant, rule-based pipeline, mock LLM, citations and approvals from day one.
-- **v2 (built):** LLM agents for routing, research and answers; agent trace; fallback to v1; Streamlit UI. Live eval 44/45; latency above goal.
-- **Next:** real documents from one plant line, sign-in, faster answers, a second AI check on answers.
-- **Later:** PDF ingestion, hybrid search, manager insights agent, CMMS integration, multi-plant rollout, online evaluation from feedback.
+- **v2 (built):** LLM agents for routing, research and answers; agent trace; fallback to v1; Streamlit UI. Live eval 44/45 (45 cases); latency above goal.
+- **v2.1 (built):** faithfulness critic, hybrid search (BM25 + embeddings), CI eval gate, 67-case golden set. Live eval 63/67; latency further above goal.
+- **Next:** real documents from one plant line, sign-in, faster answers, document review dates.
+- **Later:** PDF ingestion, manager insights agent, CMMS integration, multi-plant rollout, online evaluation from feedback.

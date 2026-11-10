@@ -28,12 +28,12 @@
 | # | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|---|---|---|---|---|
 | R1 | Safety question routed only to Maintenance | Low | **High** | Hazard override in code (keyword rules ∪ router flag) forces the Safety specialist; safety-inclusion recall eval at 100% | EHS + Eng |
-| R2 | Confident wrong answer (hallucination) | **Med-High with a small model** | High | Citation-only claims; deterministic grounding check; abstain path; manual faithfulness check on multi-route cases; upgrade the synthesizer if evals show unsupported claims | Eng |
+| R2 | Confident wrong answer (hallucination) | **Med-High with a small model** | High | Citation-only claims; deterministic grounding check; abstain path; critic agent checks each claim against the evidence text (built); upgrade the synthesizer if evals show unsupported claims | Eng |
 | R3 | Outdated or unapproved document used | Med | High | Published-only retrieval; draft → approve; old version retired; draft-leak eval at 0 | Quality Mgr |
 | R4 | Prompt injection via question, document or tool result | Med | Med | Patterns blocked before any LLM call; text delimited as untrusted; agents have read-only tools; document scan flags embedded instructions | Eng |
 | R5 | Supervisor relies on FAST in an emergency | Low | **High** | Emergency banner first; emergency SOP cited | EHS |
-| R6 | Keyword search misses synonyms | Med | Med | Router agent rewrites queries; embeddings are a stretch goal; documentation-gaps report shows misses | Eng |
-| R7 | **Agent latency above target** (several sequential calls). Quick check: average 7.2 s, slowest 11.3 s vs an 8 s goal (assumption to confirm; configurable in `targets`) | **High (observed)** | Med | Parallel specialists; token caps; small model; fallback to the rule-based pipeline; streaming in the next version | Eng |
+| R6 | Keyword search misses synonyms | Low | Med | Router agent rewrites queries; hybrid search with embeddings (built; retrieval eval top-1 hit 88.6% → 100%); documentation-gaps report shows misses | Eng |
+| R7 | **Agent latency above target** (several sequential calls). Quick check: average 7.2 s, slowest 11.3 s vs an 8 s goal (assumption to confirm; configurable in `targets`). Latest live run with the critic: p95 25.1 s | **High (observed)** | Med | Parallel specialists; token caps; small model; fallback to the rule-based pipeline; streaming in the next version; run the critic only for hazard or long answers | Eng |
 | R8 | **First live LLM run, little time to tune prompts.** Quick check found 1 vague question refused instead of a follow-up, and extra lockout steps in some answers | **High** | Med | Rule-based fallback behind a config flag; quick check done; formal live eval (separate session) gates any quality claim | Eng |
 | R9 | **Non-deterministic evals** (flaky results) | Med | Med | Temperature 0; repeat failing cases; report counts, not only percentages | Eng |
 | R10 | **Data leaves the machine** (question and sections sent to the LLM API) | Certain (live mode) | Med | Synthetic data only today; PII masked; real documents need a data-handling and vendor review | Security |
@@ -50,7 +50,7 @@
 
 - All documents, queries and feedback are **synthetic** (`is_synthetic=1`).
 - Sign-in is a local prototype (salted hashes, lockout, administrator approval). It is not SSO; there is no email password reset and no multi-factor step.
-- **Live-LLM quality was measured on 45 synthetic cases (44/45).** It is not a guarantee for real documents; the checks are citation and keyword based, not an AI judge. The 32/32 rule-based result checks wiring only.
+- **Live-LLM quality was measured on 67 synthetic cases (63/67).** It is not a guarantee for real documents; the checks are citation and keyword based, not an AI judge. The rule-based result checks wiring only.
 - Small-model answers can vary run to run, and their safety content must be checked.
-- BM25 plus query rewriting suits ~100 sections; larger corpora need hybrid search.
+- Hybrid search (BM25 + embeddings) plus query rewriting, tested on ~70 sections only.
 - SQLite runs single-node and locally.

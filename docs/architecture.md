@@ -2,7 +2,7 @@
 
 FAST routes floor supervisors' questions to the right approved documentation using a small team of LLM agents, and returns grounded, cited answers. All data is **synthetic**.
 
-> **Build status.** The deterministic control plane, the rule-based pipeline (used as fallback), guardrails, audit, analytics and the UI contract are **built and tested**. The LLM agents (router, specialists, synthesizer) are **built and evaluated live: 44/45 on the 45-case golden set**.
+> **Build status.** The deterministic control plane, the rule-based pipeline (used as fallback), guardrails, audit, analytics and the UI contract are **built and tested**. The LLM agents (router, specialists, synthesizer, faithfulness critic) and hybrid search are **built and evaluated live: 63/67 on the 67-case golden set**.
 
 ## 1. Solution architecture
 
@@ -16,13 +16,15 @@ flowchart TD
   ORC --> RA[Router Agent]
   RA --> SP[Safety, Maintenance and Quality Agents]
   SP --> TL[search_docs tool, read only]
-  TL --> IDX[(Published-only index)]
+  TL --> IDX[(Published-only hybrid index: BM25 + embeddings)]
   SP --> SY[Synthesizer Agent]
   SY --> GC[Grounding check]
-  GC --> ORC
+  GC --> CR[Critic Agent: faithfulness]
+  CR --> ORC
   RA -.-> LLM[LLM API]
   SP -.-> LLM
   SY -.-> LLM
+  CR -.-> LLM
   ORC --> DB[(SQLite: queries, audit, agent trace)]
   ORC -.-> FB[Rule-based pipeline fallback]
 ```
@@ -35,11 +37,12 @@ flowchart TD
 | **Specialist agents ×3** | LLM + tools | Each searches only its own manuals (max 3 steps) and returns cited findings or abstains | Domain focus; faster in parallel; fewer cross-source mistakes |
 | **Synthesizer agent** | LLM | Merges findings, safety first, notes conflicts and gaps, outputs strict JSON | One clear answer instead of three documents |
 | Hazard override | Code | Keyword rules ∪ router flag → Safety specialist always runs | A model slip can never drop the safety step |
-| Retriever | Code | BM25 over section chunks, **published documents only**, scoped per category | Supervisors only see approved procedures |
+| Retriever | Code | Hybrid search over section chunks: BM25 + local embeddings (`bge-small`), merged with RRF; **published documents only**, capped per category | Supervisors only see approved procedures |
 | Grounding check | Code | Every citation must be a retrieved section, else drop it or abstain | Blocks invented sources |
 | Rule-based pipeline | Code | v1 router and extractive answer, used when agents fail or `agents.mode: pipeline` | The demo and the floor keep working if the LLM API fails |
 | Docs admin, Audit, Analytics | Code | Draft → approve → publish; audit trail; KPIs and recurring issues | Compliance and visibility for managers |
-| *Stretch:* Critic, Insights agent, embeddings | LLM | Claim checking, manager summaries and gap clustering, semantic search | Next quality and insight steps |
+| **Critic agent** | LLM | Checks each answer claim against the retrieved text; removes unsupported steps, abstains on an unsupported answer, never removes safety notes | Catches a confident wrong answer that cites a real section |
+| *Stretch:* Insights agent | LLM | Manager summaries and gap clustering | Next insight step |
 
 ## 2. Data flow
 
@@ -61,7 +64,11 @@ flowchart TD
   SPEC --> SYN[Synthesizer agent]
   SYN --> GCH{Citations grounded?}
   GCH -- no --> AB[Abstain: not in docs]
-  GCH -- yes --> OUT[Answer, steps, safety notes, sources]
+  GCH -- yes --> CRT{Critic: claims supported?}
+  CRT -- answer unsupported --> AB
+  CRT -- some steps unsupported --> TRIM[Remove those steps, flag, lower confidence]
+  CRT -- all supported --> OUT[Answer, steps, safety notes, sources]
+  TRIM --> OUT
   SPEC -. agent error or timeout .-> FBK[Fallback: rule-based pipeline]
   FBK --> OUT
   OUT --> ST[(Store query, trace, audit)]
@@ -84,6 +91,7 @@ sequenceDiagram
   participant M as Maintenance Agent
   participant F as Safety Agent
   participant Y as Synthesizer
+  participant C as Critic
   participant DB as SQLite
   S->>UI: The belt on C3 is stuck
   UI->>O: ask(question, role, user)
@@ -100,6 +108,9 @@ sequenceDiagram
   O->>Y: merge findings, safety first
   Y-->>O: JSON answer with citation ids
   O->>O: grounding check
+  O->>C: check each claim against the cited text
+  C-->>O: verdict per claim
+  O->>O: remove unsupported steps or abstain
   O->>DB: query, citations, agent trace, audit
   O-->>UI: AskResponse
   UI-->>S: Safety note, steps, sources
@@ -145,10 +156,15 @@ llm:
 agents:
   mode: multi_agent           # multi_agent | pipeline (rule-based fallback)
   timeout_s: 25
-  token_budget: 12000
+  token_budget: 16000
   router:       { model: gpt-4o-mini, max_tokens: 300 }
   specialist:   { model: gpt-4o-mini, max_tokens: 700, max_steps: 3 }
   synthesizer:  { model: gpt-4o-mini, max_tokens: 900 }
+  critic:       { enabled: true, model: gpt-4o-mini, max_tokens: 700, max_unsupported_ratio: 0.34 }
+retrieval:
+  mode: hybrid                # hybrid | bm25   (env FAST_RETRIEVAL_MODE)
+  embedder: local             # local bge-small | openai | hash   (env FAST_EMBEDDER)
+  reranker: none              # cross-encoder built, off by default   (env FAST_RERANKER)
 ```
 
 ## 6. Observability and access control
