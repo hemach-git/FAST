@@ -3,7 +3,7 @@ import sys, pathlib; sys.path.insert(0, str(pathlib.Path(__file__).resolve().par
 import altair as alt
 import streamlit as st
 
-from app.services import analytics
+from app.services import analytics, freshness
 from app.ui import common
 from app.ui.common import CAT_COLORS
 
@@ -45,6 +45,10 @@ with st.container(border=True):
     st.markdown("**Key takeaways**")
     for line in analytics.insights(k):
         st.markdown(f"- {line}")
+    fk = freshness.counts()
+    if fk["overdue"] or fk["due_soon"]:
+        st.markdown(f"- **Document reviews:** {fk['overdue']} overdue and {fk['due_soon']} due soon "
+                    f"(of {fk['total']} published). See Documents → Review dates.")
 
 trend = analytics.daily_trend(df)
 cb = analytics.category_breakdown(df)

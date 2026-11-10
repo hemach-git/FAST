@@ -45,6 +45,9 @@ HISTORY = [
     ("What is the cafeteria menu today?", 2),
     ("Who won the football game last night?", 1),
 ]
+# Synthetic review ages (days since last confirmed current) so the freshness view has something to show.
+# With the default intervals: SOP-FLT-06 is overdue (365), QC-SPC-04 is due soon (365), MM-PM-06 overdue (730).
+SEED_REVIEW_AGE_DAYS = {"SOP-FLT-06": 400, "QC-SPC-04": 350, "MM-PM-06": 760}
 USERS = ["sup.alvarez", "sup.chen", "sup.okafor", "sup.patel", "sup.nguyen", "sup.smith"]
 
 
@@ -71,6 +74,10 @@ def seed_documents() -> None:
             c.execute("UPDATE documents SET created_at=?, reviewed_by='qa.manager', reviewed_at=?, review_note=? WHERE doc_id=?",
                       (base.isoformat(), base.isoformat(), "Initial synthetic baseline", doc_id))
             audit.record("seed", "system", "seed_document", doc_id, "published", conn=c)
+            if doc.doc_key in SEED_REVIEW_AGE_DAYS:      # demo: some documents are overdue / due soon
+                last = datetime.now(timezone.utc) - timedelta(days=SEED_REVIEW_AGE_DAYS[doc.doc_key])
+                c.execute("UPDATE documents SET last_reviewed_at=? WHERE doc_id=?",
+                          (last.replace(microsecond=0).isoformat(), doc_id))
         for p in sorted((CORPUS / "drafts").glob("*.md")):
             m = parse_md(p)
             doc = DocumentIn(**{k: m[k] for k in ("doc_key", "title", "category", "owner", "equipment", "content")})

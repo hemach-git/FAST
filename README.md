@@ -12,16 +12,17 @@ Floor supervisors ask a plain-English question. A small team of **AI agents** ro
 
 | Part | Status |
 |---|---|
-| Rule-based pipeline, guardrails, document approvals, audit, analytics, feedback queue | **Built and tested** (160 automated tests; rule-based eval gate in CI on the 54 golden cases that apply to it) |
+| Rule-based pipeline, guardrails, document approvals, audit, analytics, feedback queue | **Built and tested** (173 automated tests; rule-based eval gate in CI on the 54 golden cases that apply to it) |
 | **LLM agents:** router, Safety / Maintenance / Quality specialists, synthesizer, faithfulness critic (OpenAI `gpt-4o-mini`) | **Built**, tested offline with a scripted fake LLM and formally evaluated live on 67 golden cases: **63/67 passed (94.0%)** (see Evaluation results) |
 | **Hybrid search:** BM25 keywords + local `bge-small` embeddings, merged with RRF | **Built, on by default.** Retrieval eval (35 cases): top-1 hit 88.6% (BM25) → 100%. A cross-encoder reranker is built but off (it misranked emergency questions) |
 | Streamlit UI | **Built**: Ask, Documents, Review queue, Analytics, Diagnostics, plus the administrator pages *Traces & logs* and *Users & access*. Every page is smoke-tested for every role |
 | Administrator tools | **Built**: stored traces for every agent step, trace view with drill-down metrics, document approve / advise / reject with diff and history, user access management with sign-in |
-| Manager insights agent, offline LLM judge, document review dates | Not built in this prototype |
+| **Document review dates** | **Built**: every published document has a review-due date (per-category interval in `config.yaml` -> `freshness`, an assumption to confirm). Answers that cite an overdue document are kept but warned; managers confirm a document is still current on *Documents → Review dates* |
+| Manager insights agent, offline LLM judge | Not built in this prototype |
 
 **Two kinds of numbers, never mixed:** the rule-based result (49/54, the 5 misses are documented known gaps) checks the plumbing on a mock model (no AI). The live result (63/67) is the real `gpt-4o-mini` agents on synthetic data.
 
-**Next:** real documents from one plant line, company SSO, faster answers (the critic adds ~5 s), document review dates.
+**Next:** real documents from one plant line, company SSO, faster answers (the critic adds ~5 s), confirm the review intervals with EHS and Quality.
 
 ## Quick start
 
@@ -89,7 +90,7 @@ More detail:
 | Floor Supervisor | Plant Manager |
 |---|---|
 | Ask with one-click demo questions, even in messy wording | Documents: create draft → **approve/reject** → publish (old version retired, re-indexed) |
-| Safety notes first, steps, sources you can open | Review queue for flagged answers (approve/reject, audited) |
+| Safety notes first, steps, sources you can open; a warning when a source is past its review date | Review queue for flagged answers (approve/reject, audited); **Review dates**: overdue / due soon documents, "Confirm still current" (audited) |
 | "Not found" instead of guessing | Analytics: KPIs, daily trend, **top recurring issues**, documentation gaps, CSV export |
 | Thumbs up / flag a wrong answer | Diagnostics: health, config hash, recent requests, agent trace, eval summary |
 
@@ -114,7 +115,7 @@ More detail:
 | Draft-document leaks | 0 | 0 |
 | p95 latency (pipeline, mock, hybrid search) | ~24 ms | < 1 s rule-based (assumption to confirm) |
 
-Case types (67): 30 positive, 5 multi-route (maintenance + safety), 5 negative, 8 edge (injection, emergency, draft leak, PII, bad input), 10 paraphrase, 5 hazard, 4 near-miss. Every seeded document has at least one case. Tests: **160/160 pass**.
+Case types (67): 30 positive, 5 multi-route (maintenance + safety), 5 negative, 8 edge (injection, emergency, draft leak, PII, bad input), 10 paraphrase, 5 hazard, 4 near-miss. Every seeded document has at least one case. Tests: **173/173 pass**.
 
 > ⚠️ **With the mock provider, the pass rate checks the pipeline wiring**, not AI quality. The mock is extractive and was written alongside the golden set.
 
@@ -171,6 +172,7 @@ The checks are routing, citation and keyword rules, not an AI judge, and the set
 | Config of record | `config.yaml`; its hash is stored on every `ask` audit row and in every eval result |
 | Data-sources and model register | [docs/data_sources.md](docs/data_sources.md); every seeded row has `is_synthetic=1` |
 | Audit trail | `audit_log` table: who, role, action, target, decision, model, request_id, details |
+| Document freshness | Review-due date per published document (`services/freshness.py`); intervals in `config.yaml` -> `freshness` (**assumption to confirm**: safety 365, maintenance 730, quality 365 days). Overdue sources are still used, with a visible note and the flag `overdue_source_document` |
 | Human-in-the-loop | Document publishing **requires** manager approval; flagged answers need a manager decision; **agents have read-only tools and cannot write or publish** |
 | Logs | JSON lines in `logs/app.jsonl`, PII-masked |
 | Stored traces | `agent_steps` table: every agent step with PII-masked input and output (clipped to 4,000 characters), tokens, latency and cost. Administrators only. A retention period is a pilot decision (risk R16) |
@@ -184,6 +186,7 @@ The checks are routing, citation and keyword rules, not an AI judge, and the set
 - Live latency misses the 8 s goal (an assumption to confirm, set in `config.yaml` -> `targets.p95_latency_ms_agent`; it was proposed in the v2 design, not set by a client): latest run p50 7.6 s, p95 25.1 s with the critic on; before the critic p50 5.8 s, p95 8.7–10.9 s (the live API varies).
 - Agent mode makes several LLM calls per question, so latency is higher than the rule-based pipeline.
 - Hybrid search (BM25 + local `bge-small` embeddings) plus agent query rewriting, tested on ~70 sections only. The embedding model downloads on first use; without it, search falls back to a simple hash embedder.
+- Review intervals are illustrative, not a client or regulatory policy. The seeded demo makes SOP-FLT-06 and MM-PM-06 overdue and QC-SPC-04 due soon; an existing `data/fast.db` gets the new column but keeps all documents current (reseed with `python -m app.data.seed_synthetic --reset`).
 - SQLite, single node, local only. Markdown documents only (no PDF/OCR yet).
 
 ## Deliverables

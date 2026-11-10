@@ -29,7 +29,7 @@
 |---|---|---|---|---|---|
 | R1 | Safety question routed only to Maintenance | Low | **High** | Hazard override in code (keyword rules ∪ router flag) forces the Safety specialist; safety-inclusion recall eval at 100% | EHS + Eng |
 | R2 | Confident wrong answer (hallucination) | **Med-High with a small model** | High | Citation-only claims; deterministic grounding check; abstain path; critic agent checks each claim against the evidence text (built); upgrade the synthesizer if evals show unsupported claims | Eng |
-| R3 | Outdated or unapproved document used | Med | High | Published-only retrieval; draft → approve; old version retired; draft-leak eval at 0 | Quality Mgr |
+| R3 | Outdated or unapproved document used | Med | High | Published-only retrieval; draft → approve; old version retired; draft-leak eval at 0; review-due dates with an overdue warning on answers and a manager "confirm still current" step (intervals are an assumption to confirm) | Quality Mgr |
 | R4 | Prompt injection via question, document or tool result | Med | Med | Patterns blocked before any LLM call; text delimited as untrusted; agents have read-only tools; document scan flags embedded instructions | Eng |
 | R5 | Supervisor relies on FAST in an emergency | Low | **High** | Emergency banner first; emergency SOP cited | EHS |
 | R6 | Keyword search misses synonyms | Low | Med | Router agent rewrites queries; hybrid search with embeddings (built; retrieval eval top-1 hit 88.6% → 100%); documentation-gaps report shows misses | Eng |

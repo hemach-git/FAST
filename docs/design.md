@@ -1,7 +1,7 @@
 # FAST: Design v2 (AI-powered, supervised multi-agent)
 
 > **Status (2026-11-10).**
-> - **v1 (built, tested):** rule-based pipeline with a mock LLM. 160 automated tests; rule-based eval gate in CI (49/54 applicable cases, 5 documented known gaps), which checks the wiring only.
+> - **v1 (built, tested):** rule-based pipeline with a mock LLM. 173 automated tests; rule-based eval gate in CI (49/54 applicable cases, 5 documented known gaps), which checks the wiring only.
 > - **v2 (built):** LLM agents for routing, research and answer writing, plus the Streamlit UI. **Latest live eval (hybrid search + faithfulness critic): 63/67** on 67 synthetic cases (routing 95.5%, correct document cited 94.3%, abstain 100%, safety included 81.8%); p95 latency 25.1 s misses the 8 s goal. Earlier run (BM25 only, no critic, 45 cases): 44/45, p95 8.7-10.9 s.
 > - **Provider:** OpenAI `gpt-4o-mini` is the first target. The interface is provider-agnostic, so Claude plugs in the same way.
 
@@ -133,7 +133,8 @@ Also tracked per question: tokens, LLM calls, and estimated cost.
 **MVP:** router, three specialists, synthesizer, fallback switch.
 **Stretch (not built):** insights agent, LLM judge.
 **Built after the window:** faithfulness critic, hybrid retrieval, CI eval gate, 67-case golden set.
-**Next:** real documents from one plant line, sign-in, faster answers (run the critic only where it matters), document review dates.
+**Next:** real documents from one plant line, sign-in, faster answers (run the critic only where it matters), confirm the document review intervals.
+**Document freshness (built 2026-11-10):** review-due date per published document; an answer citing an overdue document is kept with a visible warning (dropping a safety SOP silently is worse); managers confirm "still current".
 The rule-based pipeline stays behind `agents.mode: pipeline` as the safety net.
 
 ## 8. Administrator capabilities (added after the first release)

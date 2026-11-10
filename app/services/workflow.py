@@ -15,7 +15,7 @@ from app.config import config_hash, get_config, model_label
 from app.data import db
 from app.models.schemas import AgentStep, AskRequest, AskResponse, Citation, LLMAnswer
 from app.observability.logging import log_event, new_request_id
-from app.services import audit, guardrails, llm, pricing, retriever, router
+from app.services import audit, freshness, guardrails, llm, pricing, retriever, router
 from app.agents import enabled as agents_enabled
 from app.agents import orchestrator
 from app.agents.prompts import PROMPT_VERSION
@@ -228,6 +228,7 @@ def ask(question: str, role: str = "supervisor", user: str = "demo.supervisor",
                                    doc_title=by_id[c]["title"], version=by_id[c]["version"],
                                    category=by_id[c]["category"], section=by_id[c]["section"],
                                    snippet=by_id[c]["text"][:300], score=by_id[c]["score"]) for c in cited]
+        freshness.annotate(resp)       # overdue sources: still used, but flagged and explained
         return _finish(resp, req, t0, stage, is_synthetic, created_at, resp.citations, usage_in, usage_out)
 
     except Exception as e:  # never crash the UI; record the error

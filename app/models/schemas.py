@@ -42,6 +42,8 @@ class Citation(BaseModel):
     section: str
     snippet: str
     score: float
+    review_due: str | None = None                                          # freshness (services/freshness.py)
+    review_state: Literal["current", "due_soon", "overdue"] | None = None
 
 
 class LLMAnswer(BaseModel):
@@ -80,6 +82,7 @@ class AskResponse(BaseModel):
     steps: list[str] = []
     safety_notes: list[str] = []
     citations: list[Citation] = []
+    freshness_notes: list[str] = []        # cited documents past their review date
     confidence: Literal["high", "medium", "low"] = "low"
     abstain_reason: str = ""
     emergency: bool = False

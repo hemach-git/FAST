@@ -21,6 +21,7 @@ erDiagram
     text status
     text owner
     text reviewed_by
+    text last_reviewed_at
     int is_synthetic
   }
   CHUNKS {
@@ -105,7 +106,7 @@ erDiagram
 
 | Table | Purpose | Key rules |
 |---|---|---|
-| documents | One row per document **version** | `UNIQUE(doc_key, version)`; status ∈ draft/published/rejected/retired; only one pending draft per doc_key; category can't change between versions |
+| documents | One row per document **version** | `UNIQUE(doc_key, version)`; status ∈ draft/published/rejected/retired; only one pending draft per doc_key; category can't change between versions; `last_reviewed_at` = last "confirm still current" (review due = that, else approval date, + the category interval) |
 | chunks | Section-level text (split on `## ` headings) | FK → documents; chunk_id = `<doc_id>#s<n>` so citations point at an exact version and section |
 | queries | Every question asked, including blocked and abstained ones | PII masked before storage; status ∈ ok/abstained/blocked/error |
 | citations | Which sections supported each answer | Composite PK; FKs to queries and chunks |

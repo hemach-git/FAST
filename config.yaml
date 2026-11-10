@@ -72,6 +72,16 @@ agents:
   # Faithfulness critic: labels each claim against the evidence; code removes unsupported steps or abstains.
   critic:      { enabled: true, model: gpt-4o-mini, max_tokens: 700, max_unsupported_ratio: 0.34 }
 
+# ---- document freshness (services/freshness.py) ----
+freshness:
+  # ASSUMPTION TO CONFIRM: illustrative review intervals, not a client or regulatory policy (added 2026-11-10).
+  # Confirm per document type with EHS and Quality before a pilot.
+  review_interval_days: { safety: 365, maintenance: 730, quality: 365 }
+  default_interval_days: 365
+  due_soon_days: 30          # "due soon" window shown to managers
+  # Overdue documents are still used in answers (dropping a safety SOP silently is worse); each answer that
+  # cites one gets a visible note and the flag overdue_source_document.
+
 # ---- targets: reported by every eval run; `gate` fails CI (python -m evals.run --gate) ----
 targets:
   # ASSUMPTION TO CONFIRM: proposed during the v2 design session (MIKRA commit dcd9c10, 2026-11-09),

@@ -174,6 +174,8 @@ MIGRATIONS = {   # columns added after the first release: (table, column) -> DDL
     ("queries", "mode"): "ALTER TABLE queries ADD COLUMN mode TEXT NOT NULL DEFAULT 'pipeline'",
     ("queries", "used_fallback"): "ALTER TABLE queries ADD COLUMN used_fallback INTEGER NOT NULL DEFAULT 0",
     ("queries", "cost_usd"): "ALTER TABLE queries ADD COLUMN cost_usd REAL NOT NULL DEFAULT 0",
+    # last time a manager confirmed a published document is still current (freshness / review dates)
+    ("documents", "last_reviewed_at"): "ALTER TABLE documents ADD COLUMN last_reviewed_at TEXT",
 }
 
 

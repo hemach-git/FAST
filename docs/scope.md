@@ -4,7 +4,7 @@
 **Client problem:** A plant operator wants floor supervisors to get answers from the right documentation (safety procedures, maintenance manuals or quality control standards), routed automatically and answered accurately.
 **Engagement:** 2.5-hour prototype, local deployment only, **synthetic data**.
 
-> **Status (2026-11-10).** The rule-based version (v1) and the Streamlit UI are built; v1 is tested (160 automated tests; a rule-based eval gate runs in CI on a mock model, which checks wiring only). The AI agent layer (v2) is built and **formally evaluated live: 63/67 on the 67-case golden set** with hybrid search and the faithfulness critic (synthetic data; earlier BM25-only run 44/45 on 45 cases).
+> **Status (2026-11-10).** The rule-based version (v1) and the Streamlit UI are built; v1 is tested (173 automated tests; a rule-based eval gate runs in CI on a mock model, which checks wiring only). The AI agent layer (v2) is built and **formally evaluated live: 63/67 on the 67-case golden set** with hybrid search and the faithfulness critic (synthetic data; earlier BM25-only run 44/45 on 45 cases).
 
 ## 1. Business problem
 
@@ -73,7 +73,7 @@ Floor supervisors resolve issues during live production: jams, alarms, out-of-sp
 | Draft-document leaks | 0 | 0 | **0** |
 | Paraphrased questions routed correctly | ≥ 80% | n/a (rules can't) | **100%** (10 of 10) |
 | p95 latency | < 8 s agent mode (assumption to confirm; `targets` in config.yaml) | ~1 ms (mock pipeline) | **25.1 s (not met)**, p50 7.6 s (critic adds ~5 s); before the critic 8.7-10.9 s |
-| Automated tests | all pass | 160/160 | 160/160 |
+| Automated tests | all pass | 173/173 | 173/173 |
 
 > The v1 result checks **pipeline wiring**, not AI quality; the mock is extractive and was written alongside the golden set. The v2 column is the latest live run (2026-11-10) on synthetic data. Failures: H02 (the critic removed invented roller-replacement steps and the answer abstained; expectation under review), G02 (no lockout citation), G06 and G18 (misrouted, then abstained). Earlier run (BM25 only, no critic, 45 cases): 44/45, the failure was A10 (router asked a clarifying question).
 
@@ -82,5 +82,6 @@ Floor supervisors resolve issues during live production: jams, alarms, out-of-sp
 - **v1 (built):** local, single plant, rule-based pipeline, mock LLM, citations and approvals from day one.
 - **v2 (built):** LLM agents for routing, research and answers; agent trace; fallback to v1; Streamlit UI. Live eval 44/45 (45 cases); latency above goal.
 - **v2.1 (built):** faithfulness critic, hybrid search (BM25 + embeddings), CI eval gate, 67-case golden set. Live eval 63/67; latency further above goal.
-- **Next:** real documents from one plant line, sign-in, faster answers, document review dates.
+- **v2.2 (built):** document review dates: overdue sources are warned in answers, managers confirm documents are still current.
+- **Next:** real documents from one plant line, sign-in, faster answers, confirm the review intervals with EHS and Quality.
 - **Later:** PDF ingestion, manager insights agent, CMMS integration, multi-plant rollout, online evaluation from feedback.

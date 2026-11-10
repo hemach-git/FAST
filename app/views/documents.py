@@ -5,13 +5,17 @@ import json
 
 import streamlit as st
 
-from app.services import docs_admin
+import pandas as pd
+
+from app.services import docs_admin, freshness
 from app.ui import common, theme
 from app.ui.common import CAT_COLORS, CAT_LABELS, chip, esc, pill
 
 common.init()
 mgr = common.is_manager()
 STATUS_COLORS = {"published": theme.OK, "draft": theme.WARN, "rejected": theme.DANGER, "retired": theme.MUTED}
+FRESH_LABELS = {"current": ("Review current", theme.OK), "due_soon": ("Review due soon", theme.WARN),
+                "overdue": ("Review overdue", theme.DANGER)}
 CATS = ["safety", "maintenance", "quality"]
 
 EXAMPLE = """## 1. Purpose
@@ -35,6 +39,11 @@ def viewer(doc_id: str) -> None:
                 + pill(d["status"], STATUS_COLORS.get(d["status"], "#475569")), unsafe_allow_html=True)
     st.markdown(f"### {d['title']}")
     st.caption(f"{d['doc_key']} v{d['version']} · Owner: {d.get('owner') or '-'} · Equipment: {d.get('equipment') or '-'}")
+    if d["status"] == "published":
+        f = freshness.status_for(d)
+        label, color = FRESH_LABELS[f["state"]]
+        st.markdown(pill(label, color) + f" <span class='small-muted'>Last reviewed {f['last_reviewed'] or '-'} · "
+                    f"next review due {f['review_due'] or '-'}</span>", unsafe_allow_html=True)
     for s in d.get("sections", []):
         with st.expander(s["section"], expanded=False):
             st.markdown(s["text"])
@@ -163,17 +172,52 @@ def pending() -> None:
                                 st.error(str(exc))
 
 
+def review_dates() -> None:
+    k = freshness.counts()
+    a, b, c = st.columns(3)
+    a.metric("Overdue", k["overdue"])
+    b.metric("Due soon", k["due_soon"])
+    c.metric("Current", k["current"])
+    st.caption("Review intervals per category are set in config.yaml -> freshness (an assumption to confirm). "
+               "Overdue documents are still used in answers, with a visible warning to the supervisor.")
+    rows = freshness.overview()
+    if not rows:
+        st.info("No published documents.")
+        return
+    st.dataframe(pd.DataFrame([{"Status": FRESH_LABELS[r["state"]][0], "Document": f"{r['doc_key']} v{r['version']}",
+                                "Review due": r["review_due"], "Days left": r["days_left"],
+                                "Last reviewed": r["last_reviewed"],
+                                "Category": CAT_LABELS.get(r["category"], r["category"]),
+                                "Owner": r["owner"]} for r in rows]),
+                 hide_index=True, width="stretch")
+    with st.form("confirm_current"):
+        labels = {r["doc_id"]: f"{r['doc_key']} v{r['version']} - {r['title']} ({FRESH_LABELS[r['state']][0].lower()})"
+                  for r in rows}
+        sel = st.selectbox("Document", list(labels), format_func=labels.get)
+        note = st.text_input("What did you check?", placeholder="e.g. walked the procedure with the area lead, no changes")
+        if st.form_submit_button("Confirm still current", type="primary",
+                                 help="Restarts the review interval. If the content needs changes, submit a new version instead."):
+            try:
+                res = freshness.confirm_current(sel, common.user(), common.role(), note)
+                st.session_state["flash"] = f"{labels[sel].split(' - ')[0]} confirmed current; next review due {res['review_due']}."
+                st.rerun()
+            except (ValueError, PermissionError) as exc:
+                st.error(str(exc))
+
+
 common.page_header("Documents", "Approved procedures, manuals and quality standards." if not mgr
                    else "Browse documents, submit updates and approve drafts.")
 if st.session_state.get("flash"):
     st.success(st.session_state.pop("flash"))
 
 if mgr:
-    tab1, tab2, tab3 = st.tabs(["Browse", "Pending approvals", "New / update document"])
+    tab1, tab2, tab4, tab3 = st.tabs(["Browse", "Pending approvals", "Review dates", "New / update document"])
     with tab1:
         browse()
     with tab2:
         pending()
+    with tab4:
+        review_dates()
     with tab3:
         new_doc_form()
 else:

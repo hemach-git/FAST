@@ -64,9 +64,14 @@ def render_sources(resp) -> None:
     if not resp.citations:
         return
     st.subheader("Sources")
+    if resp.freshness_notes:
+        st.warning("**Document review overdue**\n\n" + "\n".join(f"- {n}" for n in resp.freshness_notes),
+                   icon=":material/event_busy:")
     opened = st.session_state.setdefault("opened_chunks", set())
     for i, c in enumerate(resp.citations, 1):
         title = f"[{i}] {c.doc_key} v{c.version} - {c.section}"
+        if c.review_state == "overdue":
+            title += " · review overdue"
         with st.expander(title):
             st.markdown(chip(CAT_LABELS.get(c.category, c.category), CAT_COLORS.get(c.category, "#475569")),
                         unsafe_allow_html=True)
