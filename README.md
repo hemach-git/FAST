@@ -46,6 +46,8 @@ OPENAI_API_KEY=your-key-here
 | `python -m pytest -q` | Unit, guardrail and service tests (isolated temp DB, no network) |
 | `python -m evals.run` | Golden eval → `evals/results/latest.json` |
 | `python -m evals.run --gate` | Same eval, exits 1 unless every limit in `config.yaml` → `targets.gate` holds (what CI runs) |
+| `python -m evals.run --repeat 3` | Runs the set 3 times (fresh DB each): mean / min / max / stdev per metric and flaky cases → `evals/results/latest_<mode>_repeat.json` |
+| `python -m evals.harvest` | Thumbs-down answers (manager-approved or pending) → draft cases in `evals/candidates.jsonl` with `expect_status: TODO`; fill in by hand, then move into `golden.jsonl` (the runner refuses TODO cases) |
 | `python -m app.data.seed_synthetic --reset` | Rebuild `data/fast.db` with fresh synthetic data |
 | `python scripts/render_mermaid.py` | Diagrams → `docs/img/*.png` (needs Chrome + `pip install playwright`) |
 | `python scripts/make_docx.py` / `make_pptx.py` | Regenerate the .docx files and the one-page slide |
@@ -53,6 +55,10 @@ OPENAI_API_KEY=your-key-here
 ## Continuous integration
 
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request: `pytest`, then `python -m evals.run --gate` (rule-based golden set, mock LLM: free, no key). The gate fails the build if any limit in `config.yaml` → `targets.gate` is missed (pass rate, routing accuracy, citation hit rate, abstain correctness, safety-inclusion recall, draft leaks, fallbacks, rule-based p95 latency). The live multi-agent eval is not part of CI (paid, results vary); its p95 is reported against `targets.p95_latency_ms_agent` (an assumption to confirm).
+
+### Golden set
+
+67 cases (45 before): every one of the 18 published documents has at least one case, plus four **near-miss** questions whose topic is covered but whose answer is not in the documents (for example the torque for M24 bolts, when the table stops at M12): answering them means making something up, so the expected result is "not found". A case can carry `known_gap: {mode: reason}` for a documented weakness: it is reported as XFAIL every run (XPASS when it starts passing, so the marker can be removed), counted in the plain pass rate, and left out of the CI gate. Current known gaps, rule-based mode only: G02 (hazard keywords miss a tool-changer fault that needs lockout) and F01-F04 (the extractive answer cites the nearest section instead of abstaining).
 
 ## How it works
 

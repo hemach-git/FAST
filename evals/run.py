@@ -3,6 +3,7 @@
     python -m evals.run                      # = --mode pipeline: forces LLM_PROVIDER=mock (free, deterministic)
     python -m evals.run --mode multi_agent   # LIVE agents: uses the provider + key from .env (costs money)
     python -m evals.run --compare            # runs both modes (separate processes) and prints a side-by-side table
+    python -m evals.run --repeat 3           # run 3 times: mean/min/max per metric + flaky cases (variance)
     python -m evals.run --gate               # CI: exit 1 unless every limit in config.yaml targets.gate holds
 
 Runs the golden set against a fresh, isolated, seeded DB. Cases with a "modes" list run only in those modes.
@@ -147,6 +148,7 @@ def run_mode(mode: str, gate: bool = False) -> int:
     live = agents_enabled()
     cases_all = [json.loads(l) for l in (ROOT / "evals" / "golden.jsonl").read_text(encoding="utf-8").splitlines()
                  if l.strip()]
+    validate_cases(cases_all)
     cases = [c for c in cases_all if mode in c.get("modes", MODES)]
     agent_models = {k: cfg["agents"][k]["model"] for k in ("router", "specialist", "synthesizer", "critic")}
 
@@ -165,6 +167,7 @@ def run_mode(mode: str, gate: bool = False) -> int:
         llm_calls = sum(1 for s in r.agent_trace if s.kind == "llm")
         results.append({
             "id": case["id"], "type": case["type"], "question": case["question"], "passed": not fails,
+            "known_gap": (case.get("known_gap") or {}).get(mode),
             "failures": fails, "failure_class": failure_class(case, r, fails) if fails else [],
             "warnings": warnings(case, r), "status": r.status, "mode_used": r.mode, "used_fallback": r.used_fallback,
             "categories": r.route.categories if r.route else [], "primary": r.route.primary if r.route else None,
@@ -197,6 +200,9 @@ def run_mode(mode: str, gate: bool = False) -> int:
         "model": model_label() if not live else f"{provider}:{agent_models}", "llm_provider": provider,
         "config_hash": config_hash(), "total": n, "skipped": len(cases_all) - n,
         "passed": sum(x["passed"] for x in results), "pass_rate": rate(lambda x: True),
+        "gated_pass_rate": rate(lambda x: not x["known_gap"]),       # known gaps excluded (reported below)
+        "known_gap_xfail": [x["id"] for x in results if x["known_gap"] and not x["passed"]],
+        "known_gap_xpass": [x["id"] for x in results if x["known_gap"] and x["passed"]],
         "shared_pass_rate": rate(lambda x: "modes" not in next(c for c in cases if c["id"] == x["id"])),
         "by_type": {t: rate(lambda x, t=t: x["type"] == t) for t in sorted({x["type"] for x in results})},
         "routing_accuracy": pct(sum(x["primary"] == c["expect_primary"] for c, x in routed), len(routed)),
@@ -216,6 +222,7 @@ def run_mode(mode: str, gate: bool = False) -> int:
         "mode_used": dict(Counter(x["mode_used"] for x in results)),
         "failure_classes": dict(Counter(k for x in results for k in x["failure_class"])),
         "warnings": dict(Counter(w for x in results for w in x["warnings"])),
+        "gated_metrics": gated_metrics(pairs),          # same metrics without known-gap cases (what the gate uses)
         "p95_target_ms": target_ms(cfg, mode, live),
         "p95_target_met": None,
         "note": ("mock provider: pass rate validates pipeline wiring (routing, retrieval, guardrails, grounding), "
@@ -238,9 +245,16 @@ def run_mode(mode: str, gate: bool = False) -> int:
               "est_cost_usd_total", "fallback_count", "mode_used", "failure_classes", "warnings"):
         print(f"  {k:26s} {summary[k]}")
     print("  by type:", summary["by_type"])
+    print(f"  {'gated_pass_rate':26s} {summary['gated_pass_rate']}  (excludes {len(summary['known_gap_xfail'])} "
+          f"known-gap failures)")
     for x in results:
         if not x["passed"]:
-            print(f"  FAIL {x['id']} {x['question'][:60]!r}: [{','.join(x['failure_class'])}] {'; '.join(x['failures'])}")
+            tag = "XFAIL" if x["known_gap"] else "FAIL"
+            gap = f"  [known gap: {x['known_gap']}]" if x["known_gap"] else ""
+            print(f"  {tag} {x['id']} {x['question'][:60]!r}: [{','.join(x['failure_class'])}] "
+                  f"{'; '.join(x['failures'])}{gap}")
+        elif x["known_gap"]:
+            print(f"  XPASS {x['id']} {x['question'][:60]!r}: passes now - remove its known_gap marker for {mode}")
     for x in results:
         if x["warnings"]:
             print(f"  WARN {x['id']} {x['question'][:60]!r}: {', '.join(x['warnings'])}")
@@ -254,6 +268,95 @@ def run_mode(mode: str, gate: bool = False) -> int:
     return 0 if summary["passed"] == n else 1
 
 
+def gated_metrics(pairs: list[tuple[dict, dict]]) -> dict:
+    """Rate metrics recomputed without known-gap cases, so a documented gap does not fail the CI gate twice.
+    The ungated numbers stay in the summary and are what reports show."""
+    keep = [(c, x) for c, x in pairs if not x["known_gap"]]
+
+    def pct(sel, ok):
+        return round(100 * sum(ok(c, x) for c, x in sel) / len(sel), 1) if sel else None
+    return {
+        "routing_accuracy": pct([p for p in keep if "expect_primary" in p[0]],
+                                lambda c, x: x["primary"] == c["expect_primary"]),
+        "citation_hit_rate": pct([p for p in keep if "expect_cited_doc" in p[0]],
+                                 lambda c, x: c["expect_cited_doc"] in " ".join(x["cited"])),
+        "abstain_correctness": pct([p for p in keep if c_type(p) == "negative"], lambda c, x: x["passed"]),
+        "safety_inclusion_recall": pct([p for p in keep if p[0].get("expect_safety_citation")],
+                                       lambda c, x: any(cid.startswith("SOP-") for cid in x["cited"])),
+    }
+
+
+def c_type(pair: tuple[dict, dict]) -> str:
+    return pair[0]["type"]
+
+
+# ---------------------------------------------------------------- golden-set validation
+REQUIRED = ("id", "type", "question", "expect_status")
+
+
+def validate_cases(cases: list[dict]) -> None:
+    """Refuse to run on a broken golden set: duplicate ids, missing keys, unreviewed TODO values."""
+    errors, seen = [], set()
+    for c in cases:
+        cid = c.get("id", "?")
+        missing = [k for k in REQUIRED if k not in c]
+        if missing:
+            errors.append(f"{cid}: missing {missing}")
+        if cid in seen:
+            errors.append(f"{cid}: duplicate id")
+        seen.add(cid)
+        if "TODO" in json.dumps(c):
+            errors.append(f"{cid}: still has a TODO value (fill in the expectation before promoting it)")
+        if c.get("expect_status") not in (None, "ok", "abstained", "blocked", "error"):
+            errors.append(f"{cid}: bad expect_status {c.get('expect_status')!r}")
+        for m in (c.get("known_gap") or {}):
+            if m not in MODES:
+                errors.append(f"{cid}: known_gap mode {m!r} not in {MODES}")
+    if errors:
+        raise SystemExit("golden.jsonl is invalid:\n  " + "\n  ".join(errors))
+
+
+# ---------------------------------------------------------------- repeat runs (variance)
+REPEAT_METRICS = ("pass_rate", "gated_pass_rate", "routing_accuracy", "citation_hit_rate", "abstain_correctness",
+                  "safety_inclusion_recall", "draft_leak_count", "p50_latency_ms", "p95_latency_ms", "tokens_per_q",
+                  "est_cost_usd_total", "fallback_count")
+
+
+def aggregate(runs: list[dict]) -> dict:
+    """Mean / min / max per metric and per-case pass counts. Flaky = passed in some runs but not all."""
+    stats = {}
+    for k in REPEAT_METRICS:
+        vals = [r["summary"].get(k) for r in runs if r["summary"].get(k) is not None]
+        if vals:
+            stats[k] = {"mean": round(statistics.fmean(vals), 2), "min": min(vals), "max": max(vals),
+                        "stdev": round(statistics.stdev(vals), 2) if len(vals) > 1 else 0.0}
+    per_case: dict[str, int] = Counter()
+    for r in runs:
+        for x in r["cases"]:
+            per_case[x["id"]] += int(x["passed"])
+    n = len(runs)
+    return {"runs": n, "metrics": stats, "case_pass_counts": dict(per_case),
+            "flaky": sorted(k for k, v in per_case.items() if 0 < v < n),
+            "always_fail": sorted(k for k, v in per_case.items() if v == 0)}
+
+
+def repeat(mode: str, n: int) -> int:
+    runs, codes = [], []
+    for i in range(n):
+        print(f"\n### repeat {i + 1}/{n}  --mode {mode}", flush=True)
+        codes.append(subprocess.run([sys.executable, "-m", "evals.run", "--mode", mode], cwd=ROOT).returncode)
+        runs.append(json.loads((RES_DIR / f"latest_{mode}.json").read_text(encoding="utf-8")))
+    agg = {"mode": mode, "run_at": datetime.now(timezone.utc).isoformat(timespec="seconds"), **aggregate(runs)}
+    (RES_DIR / f"latest_{mode}_repeat.json").write_text(json.dumps(agg, indent=2), encoding="utf-8")
+    print(f"\nREPEAT SUMMARY [{mode}] - {n} runs  (-> evals/results/latest_{mode}_repeat.json)")
+    print(f"  {'metric':26s} {'mean':>9s} {'min':>9s} {'max':>9s} {'stdev':>8s}")
+    for k, v in agg["metrics"].items():
+        print(f"  {k:26s} {v['mean']:>9} {v['min']:>9} {v['max']:>9} {v['stdev']:>8}")
+    print(f"  flaky cases (pass in some runs only): {agg['flaky'] or 'none'}")
+    print(f"  always failing: {agg['always_fail'] or 'none'}")
+    return max(codes)
+
+
 # ---------------------------------------------------------------- targets + CI gate
 def target_ms(cfg: dict, mode: str, live: bool) -> float | None:
     t = cfg.get("targets", {})
@@ -263,7 +366,7 @@ def target_ms(cfg: dict, mode: str, live: bool) -> float | None:
 def gate_results(summary: dict, cfg: dict) -> list[tuple[str, object, str, bool]]:
     """Each gate limit -> (metric, value, limit text, ok). A missing metric value fails closed."""
     g = cfg["targets"]["gate"]
-    limits = [("pass_rate", ">=", g["min_pass_rate"]), ("routing_accuracy", ">=", g["min_routing_accuracy"]),
+    limits = [("gated_pass_rate", ">=", g["min_pass_rate"]), ("routing_accuracy", ">=", g["min_routing_accuracy"]),
               ("citation_hit_rate", ">=", g["min_citation_hit_rate"]),
               ("abstain_correctness", ">=", g["min_abstain_correctness"]),
               ("safety_inclusion_recall", ">=", g["min_safety_inclusion_recall"]),
@@ -271,8 +374,9 @@ def gate_results(summary: dict, cfg: dict) -> list[tuple[str, object, str, bool]
     if not summary.get("live"):           # live latency varies with the API: reported, never gated
         limits.append(("p95_latency_ms", "<=", summary.get("p95_target_ms")))
     out = []
+    gm = summary.get("gated_metrics") or {}
     for k, op, lim in limits:
-        v = summary.get(k)
+        v = gm[k] if k in gm else summary.get(k)
         ok = v is not None and lim is not None and (v >= lim if op == ">=" else v <= lim)
         out.append((k, v, f"{op} {lim}", ok))
     return out
@@ -312,10 +416,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--mode", choices=MODES, default="pipeline",
                     help="pipeline (default, mock LLM, free) or multi_agent (live agents from .env)")
     ap.add_argument("--compare", action="store_true", help="run both modes and print a side-by-side table")
+    ap.add_argument("--repeat", type=int, default=1, metavar="N",
+                    help="run the set N times (fresh DB each) and report mean/min/max and flaky cases")
     ap.add_argument("--gate", action="store_true",
                     help="exit 1 unless every limit in config.yaml targets.gate holds (used by CI)")
     a = ap.parse_args(argv)
-    return compare() if a.compare else run_mode(a.mode, gate=a.gate)
+    if a.compare:
+        return compare()
+    if a.repeat > 1:
+        return repeat(a.mode, a.repeat)
+    return run_mode(a.mode, gate=a.gate)
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ import copy
 from app.config import get_config
 from evals import run
 
-GOOD = {"live": False, "pass_rate": 100.0, "routing_accuracy": 100.0, "citation_hit_rate": 100.0,
+GOOD = {"live": False, "gated_pass_rate": 100.0, "routing_accuracy": 100.0, "citation_hit_rate": 100.0,
         "abstain_correctness": 100.0, "safety_inclusion_recall": 100.0, "draft_leak_count": 0,
         "fallback_count": 0, "p95_latency_ms": 2.0, "p95_target_ms": 1000}
 
@@ -27,7 +27,7 @@ def test_good_run_passes_gate():
 
 
 def test_each_limit_can_fail_the_gate():
-    for k, bad in [("pass_rate", 96.9), ("routing_accuracy", 90.0), ("citation_hit_rate", 80.0),
+    for k, bad in [("gated_pass_rate", 96.9), ("routing_accuracy", 90.0), ("citation_hit_rate", 80.0),
                    ("abstain_correctness", 99.0), ("safety_inclusion_recall", 90.0), ("draft_leak_count", 1),
                    ("fallback_count", 2), ("p95_latency_ms", 1500.0)]:
         assert failed({**GOOD, k: bad}) == [k], k
@@ -45,9 +45,23 @@ def test_live_latency_is_reported_not_gated():
 def test_gate_limits_read_from_config():
     cfg = copy.deepcopy(get_config())
     cfg["targets"]["gate"]["min_pass_rate"] = 90.0
-    assert failed({**GOOD, "pass_rate": 96.9}, cfg) == []
+    assert failed({**GOOD, "gated_pass_rate": 96.9}, cfg) == []
 
 
 def test_target_picks_mode():
     cfg = get_config()
     assert run.target_ms(cfg, "multi_agent", True) == 8000 and run.target_ms(cfg, "pipeline", False) == 1000
+
+
+def test_gate_uses_metrics_without_known_gaps():
+    s = {**GOOD, "safety_inclusion_recall": 87.5, "gated_metrics": {"safety_inclusion_recall": 100.0}}
+    assert failed(s) == []
+    s["gated_metrics"]["safety_inclusion_recall"] = 90.0
+    assert failed(s) == ["safety_inclusion_recall"]
+
+
+def test_gated_metrics_drop_known_gap_cases():
+    c1 = {"type": "hazard", "expect_safety_citation": True}
+    pairs = [(c1, {"known_gap": None, "cited": ["SOP-LOTO-04-v1#s3"], "passed": True}),
+             (c1, {"known_gap": "rule-based gap", "cited": ["MM-CNC-04-v1#s4"], "passed": False})]
+    assert run.gated_metrics(pairs)["safety_inclusion_recall"] == 100.0
