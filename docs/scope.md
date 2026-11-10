@@ -1,6 +1,6 @@
 # FAST: Scope Document (v2: AI-powered, supervised multi-agent)
 
-**Project:** FAST (Floor Answers from Standards and Technical documents)
+**Project:** FAST (Floor Assistant for Supervisors and Technicians)
 **Client problem:** A plant operator wants floor supervisors to get answers from the right documentation (safety procedures, maintenance manuals or quality control standards), routed automatically and answered accurately.
 **Engagement:** 2.5-hour prototype, local deployment only, **synthetic data**.
 

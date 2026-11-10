@@ -1,4 +1,4 @@
-# Frontend session brief: FAST (Floor Answers from Standards and Technical documents)
+# Frontend session brief: FAST (Floor Assistant for Supervisors and Technicians)
 
 You are building the **Streamlit frontend only** for FAST. Floor supervisors ask plain-English questions. The backend routes each question to the right documentation (Safety procedures, Maintenance manuals, Quality standards) and returns a grounded, cited answer. Plant managers update documents (draft, then approve), review flagged answers, and look at query analytics to spot recurring floor issues.
 

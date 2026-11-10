@@ -1,4 +1,4 @@
-# FAST: Floor Answers from Standards and Technical documents
+# FAST: Floor Assistant for Supervisors and Technicians
 
 > **Prototype · SYNTHETIC DATA · local only.** All documents, equipment, people and numbers are fictional.
 

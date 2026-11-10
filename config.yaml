@@ -1,4 +1,4 @@
-# FAST - Floor Answers from Standards and Technical documents
+# FAST - Floor Assistant for Supervisors and Technicians
 # Governance: this file is the app/model config of record. A snapshot is written per run.
 app:
   name: FAST

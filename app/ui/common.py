@@ -112,7 +112,7 @@ def login_gate() -> None:
     _, mid, _ = st.columns([1, 2, 1])
     with mid:
         st.markdown("## :orange[FAST]")
-        st.caption("Floor Answers from Standards and Technical documents - prototype, synthetic data")
+        st.caption("Floor Assistant for Supervisors and Technicians - prototype, synthetic data")
         t_in, t_req = st.tabs(["Sign in", "Request access"])
         with t_in:
             with st.form("login_form"):
@@ -151,7 +151,7 @@ def login_gate() -> None:
 def sidebar_identity() -> None:
     with st.sidebar:
         st.markdown("## :orange[FAST]")
-        st.caption("Floor Answers from Standards and Technical documents")
+        st.caption("Floor Assistant for Supervisors and Technicians")
         u = current_user()
         if u:
             st.markdown(f"**{esc(u['display_name'])}**")
