@@ -21,6 +21,9 @@ from pptx.util import Inches, Pt
 
 ROOT = Path(__file__).resolve().parent.parent
 RESULTS = ROOT / "evals" / "results"
+# p95 goal from config.yaml targets (an ASSUMPTION TO CONFIRM, see the comment there)
+GOAL_S = (__import__("yaml").safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
+          .get("targets", {}).get("p95_latency_ms_agent", 8000)) / 1000
 NAVY, ORANGE, GREY, WHITE = RGBColor(0x0F, 0x3D, 0x2E), RGBColor(0xB4, 0x53, 0x09), RGBColor(0x47, 0x55, 0x69), RGBColor(0xFF, 0xFF, 0xFF)   # NAVY = deep green, ORANGE = dark amber (theme.py)
 RED, BLUE, GREEN, LIGHT = RGBColor(0xDC, 0x26, 0x26), RGBColor(0x25, 0x63, 0xEB), RGBColor(0x15, 0x80, 0x3D), RGBColor(0xEC, 0xF4, 0xEF)
 PALE = RGBColor(0xCB, 0xD5, 0xE1)
@@ -79,7 +82,7 @@ def live_lines() -> list:
         if "abstain_correctness" in s:
             facts.append(f"said \"not found\" when it should: {s['abstain_correctness']:.0f}%")
         if "p95_latency_ms" in s:
-            facts.append(f"95% of answers within {s['p95_latency_ms'] / 1000:.1f} s (goal: under 8 s)")
+            facts.append(f"95% of answers within {s['p95_latency_ms'] / 1000:.1f} s (goal, to be confirmed: under {GOAL_S:g} s)")
         return lines + [("; ".join(facts) + ".", 12, GREY, False)] if facts else lines
     print("no formal live evaluation yet: using the informal 9-question quick check")
     return [
@@ -87,7 +90,8 @@ def live_lines() -> list:
         [("7 of 9", 20, NAVY, True), ("  answered with sources", 12, GREY, False)],
         ("1 off-topic question (cafeteria menu) was correctly refused. "
          "1 vague question was refused instead of asking a follow-up.", 12, GREY, False),
-        ("Average 7.2 s, slowest 11.3 s. Goal: under 8 s, so slow safety questions miss it.", 12, GREY, False),
+        (f"Average 7.2 s, slowest 11.3 s. Goal (to be confirmed): under {GOAL_S:g} s, so slow safety questions miss it.",
+         12, GREY, False),
         ("Some answers add extra lockout steps: wordy, but safe.", 12, GREY, False),
     ]
 

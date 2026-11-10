@@ -45,9 +45,14 @@ OPENAI_API_KEY=your-key-here
 |---|---|
 | `python -m pytest -q` | Unit, guardrail and service tests (isolated temp DB, no network) |
 | `python -m evals.run` | Golden eval → `evals/results/latest.json` |
+| `python -m evals.run --gate` | Same eval, exits 1 unless every limit in `config.yaml` → `targets.gate` holds (what CI runs) |
 | `python -m app.data.seed_synthetic --reset` | Rebuild `data/fast.db` with fresh synthetic data |
 | `python scripts/render_mermaid.py` | Diagrams → `docs/img/*.png` (needs Chrome + `pip install playwright`) |
 | `python scripts/make_docx.py` / `make_pptx.py` | Regenerate the .docx files and the one-page slide |
+
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request: `pytest`, then `python -m evals.run --gate` (rule-based golden set, mock LLM: free, no key). The gate fails the build if any limit in `config.yaml` → `targets.gate` is missed (pass rate, routing accuracy, citation hit rate, abstain correctness, safety-inclusion recall, draft leaks, fallbacks, rule-based p95 latency). The live multi-agent eval is not part of CI (paid, results vary); its p95 is reported against `targets.p95_latency_ms_agent` (an assumption to confirm).
 
 ## How it works
 
@@ -100,7 +105,7 @@ More detail:
 | Abstain correctness (out-of-scope) | 100% | 100% |
 | Safety-inclusion recall (hazard tasks) | 100% | 100% |
 | Draft-document leaks | 0 | 0 |
-| p95 latency (pipeline, mock) | ~1 ms | < 8 s agent mode |
+| p95 latency (pipeline, mock) | ~1 ms | < 8 s agent mode (assumption to confirm) |
 
 Case types: 15 positive, 5 multi-route (maintenance + safety), 5 negative, 7 edge (injection, emergency, draft leak, PII, bad input). Tests: **107/107 pass** (`tests/results/pytest_latest.txt`).
 
@@ -147,7 +152,7 @@ The checks are routing, citation and keyword rules, not an AI judge, and the set
 
 - Sign-in is a **local prototype** (salted password hashes, lockout, administrator approval). It is not company SSO and has no multi-factor step or email password reset.
 - Live quality was measured on 45 **synthetic** cases (44/45); it is not a guarantee for real documents. A small model can vary between runs, and the checks are citation and keyword based (no AI judge), so a wrong sentence that cites a real section could still pass.
-- Live latency misses the 8 s goal: p50 5.8 s, p95 between 8.7 s and 10.9 s across two runs of the same set (the live API varies).
+- Live latency misses the 8 s goal (an assumption to confirm, set in `config.yaml` -> `targets.p95_latency_ms_agent`; it was proposed in the v2 design, not set by a client): p50 5.8 s, p95 between 8.7 s and 10.9 s across two runs of the same set (the live API varies).
 - Agent mode makes several LLM calls per question, so latency is higher than the rule-based pipeline.
 - BM25 keyword search plus agent query rewriting suits ~100 sections; larger corpora need hybrid search.
 - SQLite, single node, local only. Markdown documents only (no PDF/OCR yet).

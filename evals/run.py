@@ -3,6 +3,7 @@
     python -m evals.run                      # = --mode pipeline: forces LLM_PROVIDER=mock (free, deterministic)
     python -m evals.run --mode multi_agent   # LIVE agents: uses the provider + key from .env (costs money)
     python -m evals.run --compare            # runs both modes (separate processes) and prints a side-by-side table
+    python -m evals.run --gate               # CI: exit 1 unless every limit in config.yaml targets.gate holds
 
 Runs the golden set against a fresh, isolated, seeded DB. Cases with a "modes" list run only in those modes.
 Writes evals/results/latest_<mode>.json, latest.json (last run) and a timestamped copy.
@@ -129,7 +130,7 @@ def trace_summary(trace) -> dict:
 
 
 # ---------------------------------------------------------------- one mode
-def run_mode(mode: str) -> int:
+def run_mode(mode: str, gate: bool = False) -> int:
     tmp = Path(tempfile.mkdtemp(prefix=f"fast-eval-{mode}-"))
     os.environ["FAST_DB_PATH"] = str(tmp / "eval.db")
     os.environ["FAST_LOG_DIR"] = str(tmp / "logs")
@@ -215,10 +216,14 @@ def run_mode(mode: str) -> int:
         "mode_used": dict(Counter(x["mode_used"] for x in results)),
         "failure_classes": dict(Counter(k for x in results for k in x["failure_class"])),
         "warnings": dict(Counter(w for x in results for w in x["warnings"])),
+        "p95_target_ms": target_ms(cfg, mode, live),
+        "p95_target_met": None,
         "note": ("mock provider: pass rate validates pipeline wiring (routing, retrieval, guardrails, grounding), "
                  "NOT live LLM answer quality") if provider == "mock" else
                 "live LLM run; cost is an estimate from PRICES in evals/run.py",
     }
+    if summary["p95_target_ms"] is not None and summary["p95_latency_ms"] is not None:
+        summary["p95_target_met"] = summary["p95_latency_ms"] <= summary["p95_target_ms"]
     out = {"summary": summary, "config_snapshot": cfg, "cases": results}
     RES_DIR.mkdir(parents=True, exist_ok=True)
     blob = json.dumps(out, indent=2)
@@ -239,9 +244,48 @@ def run_mode(mode: str) -> int:
     for x in results:
         if x["warnings"]:
             print(f"  WARN {x['id']} {x['question'][:60]!r}: {', '.join(x['warnings'])}")
+    if summary["p95_target_ms"] is not None:
+        print(f"  p95 target (assumption)    {summary['p95_target_ms']:.0f} ms -> "
+              f"{'met' if summary['p95_target_met'] else 'NOT met'}")
     if provider == "mock":
         print("  NOTE:", summary["note"])
+    if gate:
+        return gate_check(summary, cfg)
     return 0 if summary["passed"] == n else 1
+
+
+# ---------------------------------------------------------------- targets + CI gate
+def target_ms(cfg: dict, mode: str, live: bool) -> float | None:
+    t = cfg.get("targets", {})
+    return t.get("p95_latency_ms_agent") if live else t.get("p95_latency_ms_pipeline")
+
+
+def gate_results(summary: dict, cfg: dict) -> list[tuple[str, object, str, bool]]:
+    """Each gate limit -> (metric, value, limit text, ok). A missing metric value fails closed."""
+    g = cfg["targets"]["gate"]
+    limits = [("pass_rate", ">=", g["min_pass_rate"]), ("routing_accuracy", ">=", g["min_routing_accuracy"]),
+              ("citation_hit_rate", ">=", g["min_citation_hit_rate"]),
+              ("abstain_correctness", ">=", g["min_abstain_correctness"]),
+              ("safety_inclusion_recall", ">=", g["min_safety_inclusion_recall"]),
+              ("draft_leak_count", "<=", g["max_draft_leaks"]), ("fallback_count", "<=", g["max_fallbacks"])]
+    if not summary.get("live"):           # live latency varies with the API: reported, never gated
+        limits.append(("p95_latency_ms", "<=", summary.get("p95_target_ms")))
+    out = []
+    for k, op, lim in limits:
+        v = summary.get(k)
+        ok = v is not None and lim is not None and (v >= lim if op == ">=" else v <= lim)
+        out.append((k, v, f"{op} {lim}", ok))
+    return out
+
+
+def gate_check(summary: dict, cfg: dict) -> int:
+    rows = gate_results(summary, cfg)
+    print("\nEVAL GATE (limits in config.yaml -> targets.gate)")
+    for k, v, lim, ok in rows:
+        print(f"  {'PASS' if ok else 'FAIL'}  {k:26s} {str(v):>8s}  {lim}")
+    failed = [k for k, _, _, ok in rows if not ok]
+    print(f"EVAL GATE: {'FAILED (' + ', '.join(failed) + ')' if failed else 'PASSED'}")
+    return 1 if failed else 0
 
 
 # ---------------------------------------------------------------- compare
@@ -268,8 +312,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--mode", choices=MODES, default="pipeline",
                     help="pipeline (default, mock LLM, free) or multi_agent (live agents from .env)")
     ap.add_argument("--compare", action="store_true", help="run both modes and print a side-by-side table")
+    ap.add_argument("--gate", action="store_true",
+                    help="exit 1 unless every limit in config.yaml targets.gate holds (used by CI)")
     a = ap.parse_args(argv)
-    return compare() if a.compare else run_mode(a.mode)
+    return compare() if a.compare else run_mode(a.mode, gate=a.gate)
 
 
 if __name__ == "__main__":

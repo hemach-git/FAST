@@ -59,6 +59,21 @@ agents:
   # Faithfulness critic: labels each claim against the evidence; code removes unsupported steps or abstains.
   critic:      { enabled: true, model: gpt-4o-mini, max_tokens: 700, max_unsupported_ratio: 0.34 }
 
+# ---- targets: reported by every eval run; `gate` fails CI (python -m evals.run --gate) ----
+targets:
+  # ASSUMPTION TO CONFIRM: proposed during the v2 design session (MIKRA commit dcd9c10, 2026-11-09),
+  # not set by a client or the product owner. Confirm or change before treating "not met" as a defect.
+  p95_latency_ms_agent: 8000      # live multi-agent mode: reported as met / not met, never gates CI
+  p95_latency_ms_pipeline: 1000   # rule-based fallback (same assumption); gated in CI
+  gate:                           # rule-based eval (mock LLM, free, deterministic): every limit must hold
+    min_pass_rate: 100.0          # % of golden cases passed
+    min_routing_accuracy: 95.0
+    min_citation_hit_rate: 95.0
+    min_abstain_correctness: 100.0
+    min_safety_inclusion_recall: 100.0
+    max_draft_leaks: 0
+    max_fallbacks: 0
+
 auth:
   enabled: true              # false (or FAST_AUTH=off) shows the old role selector, for local development only
   min_password_length: 10

@@ -19,7 +19,7 @@ Diagrams: [architecture.md](architecture.md) and [data_model.md](data_model.md).
 - **R7.** Supervisors flag wrong answers; managers review them.
 - **R8.** Ambiguous question: ask one clarifying question, or search broadly and say so.
 - **R9 (stretch).** Manager insights: cluster unanswered questions into documentation gaps, summarize recurring issues, draft a document update (human approves).
-- **Non-functional:** p95 under 8 s in agent mode (**measured p95 8.7 s in one run and 10.9 s in the next, p50 5.8 s: not met**), under 1 s in the rule-based fallback, runs locally, no secrets in the repo, every request traceable.
+- **Non-functional:** p95 under 8 s in agent mode (assumption to confirm: `targets.p95_latency_ms_agent` in config.yaml) (**measured p95 8.7 s in one run and 10.9 s in the next, p50 5.8 s: not met**), under 1 s in the rule-based fallback, runs locally, no secrets in the repo, every request traceable.
 
 **Never list**
 - NEVER give a safety answer without citing the safety procedure; never suggest skipping a safety step.
@@ -101,7 +101,7 @@ Also:
 | Safety-inclusion recall | 100% |
 | Draft leaks | 0 |
 | Ungrounded citations reaching the user | 0 |
-| p95 latency (agent mode) | < 8 s |
+| p95 latency (agent mode) | < 8 s (assumption to confirm; `targets.p95_latency_ms_agent`) |
 
 Also tracked per question: tokens, LLM calls, and estimated cost.
 

@@ -70,7 +70,7 @@ Floor supervisors resolve issues during live production: jams, alarms, out-of-sp
 | Safety procedure included for hazards | 100% | 100% (5/5) | **100%** (all 3 hazard-type cases pass) |
 | Draft-document leaks | 0 | 0 | **0** |
 | Paraphrased questions routed correctly | ≥ 80% | n/a (rules can't) | **90%** (9 of 10) |
-| p95 latency | < 8 s agent mode | ~1 ms (mock pipeline) | **10.9 s (not met)**; 8.7 s in the previous run; p50 5.8 s |
+| p95 latency | < 8 s agent mode (assumption to confirm; `targets` in config.yaml) | ~1 ms (mock pipeline) | **10.9 s (not met)**; 8.7 s in the previous run; p50 5.8 s |
 | Automated tests | all pass | 107/107 | 107/107 |
 
 > The v1 pass rate (32/32) checks **pipeline wiring**, not AI quality; the mock is extractive and was written alongside the golden set. The v2 column is the real live model on synthetic data. Failure: A10 ("how fast am I allowed to drive the lift truck indoors"): the router asked a clarifying question instead of answering. P11 was a test-string mismatch (answer said "60 and 80 microns"), fixed in the test. 2 answers mention lockout without citing the lockout procedure; 1 irrelevant safety note.
