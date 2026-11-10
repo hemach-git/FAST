@@ -57,7 +57,7 @@ class LLMAnswer(BaseModel):
 class AgentStep(BaseModel):
     """One step in the agent trace (LLM call, tool call or deterministic guard)."""
     seq: int = 0
-    agent: str                              # router | safety | maintenance | quality | synthesizer | orchestrator
+    agent: str                              # router | safety | maintenance | quality | synthesizer | critic | orchestrator
     kind: Literal["llm", "tool", "guard"] = "llm"
     name: str = ""                          # e.g. search_docs, grounding_check
     model: str | None = None

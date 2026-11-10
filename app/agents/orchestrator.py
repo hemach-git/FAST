@@ -11,7 +11,7 @@ from concurrent.futures import TimeoutError as FutureTimeout
 
 from pydantic import BaseModel, Field
 
-from app.agents import router_agent, specialists, synthesizer
+from app.agents import critic, router_agent, specialists, synthesizer
 from app.agents.base import AgentError
 from app.config import get_config
 from app.models.schemas import CATEGORIES, AgentStep, LLMAnswer, RouteDecision
@@ -32,6 +32,7 @@ class OrchestratorResult(BaseModel):
     tokens_out: int = 0
     equipment: str | None = None
     clarify: str | None = None
+    flags: list[str] = Field(default_factory=list)       # e.g. faithfulness-check outcomes
 
 
 def _finish_trace(trace: list[AgentStep]) -> tuple[int, int]:
@@ -188,6 +189,18 @@ def _answer(question: str, emergency: bool, trace: list[AgentStep]) -> Orchestra
     ans, st, hits = synthesizer.synthesize(question, plan, useful, hazard)
     trace += st
     _check_budget(trace, acfg["token_budget"])
+
+    # 5. Faithfulness critic (agent labels each claim; CODE removes unsupported steps or abstains)
+    flags: list[str] = []
+    if acfg.get("critic", {}).get("enabled") and not ans.abstain and ans.citation_ids:
+        report, st = critic.review(question, ans, hits)
+        trace += st
+        _check_budget(trace, acfg["token_budget"])
+        outcome = critic.apply(ans, report, hits)
+        ans, flags = outcome.answer, outcome.flags
+        trace.append(AgentStep(agent="orchestrator", kind="guard", name="faithfulness_check",
+                               status="error" if outcome.unfaithful else "ok", summary=outcome.summary,
+                               output=report.model_dump_json()[:4000]))
     tin, tout = _finish_trace(trace)
     return OrchestratorResult(decision=_decision(cats), answer=ans, hits=hits, trace=trace,
-                              tokens_in=tin, tokens_out=tout, equipment=equipment)
+                              tokens_in=tin, tokens_out=tout, equipment=equipment, flags=flags)

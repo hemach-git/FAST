@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 
 from app.services import llm
 
-AGENTS = ("router", "safety", "maintenance", "quality", "synthesizer")
+AGENTS = ("router", "safety", "maintenance", "quality", "synthesizer", "critic")
 FAKE_ID = "FAKE-DOC-v1#s9"           # looks like a real chunk id but was never retrieved
 
 
@@ -29,6 +29,8 @@ def agent_of(system: str) -> str:
         return m.group(1).lower()
     if "answer-writing agent" in system:
         return "synthesizer"
+    if "faithfulness critic" in system:
+        return "critic"
     raise AssertionError("unknown agent prompt: " + system[:60])
 
 
@@ -54,6 +56,10 @@ class FakeLLM:
     loop: set = field(default_factory=set)                 # always request a tool when tools are offered
     loop_forever: set = field(default_factory=set)         # request a tool even when none are offered
     extra_tool_calls: dict = field(default_factory=dict)   # agent -> list[(tool_name, arguments)] on 1st call
+    critic_verdicts: dict = field(default_factory=dict)    # claim id (A1/S1/N1) -> verdict; others "supported"
+    critic_omit: set = field(default_factory=set)          # claim ids the critic leaves out (-> unchecked)
+    critic_support: list = field(default_factory=list)     # extra support_ids on every verdict
+    synth_answer: dict | None = None                       # override the synthesizer's JSON (citations still filled)
     tokens: tuple = (100, 40)
     calls: list[Call] = field(default_factory=list)
 
@@ -106,8 +112,17 @@ class FakeLLM:
                  "findings": [{"claim": f"{agent} finding", "citation_ids": cites}] if ids else []}
             return R(json.dumps(f))
 
+        if agent == "critic":
+            claim_ids = re.findall(r"^([ASN]\d+): ", messages[1]["content"], re.M)
+            v = [{"id": k, "verdict": self.critic_verdicts.get(k, "supported"),
+                  "support_ids": list(self.critic_support), "reason": "test"}
+                 for k in claim_ids if k not in self.critic_omit]
+            return R(json.dumps({"verdicts": v}))
+
         # synthesizer
         ids = list(dict.fromkeys(re.findall(r'<doc id="([^"]+)"', messages[1]["content"])))
+        if self.synth_answer is not None:
+            return R(json.dumps({**self.synth_answer, "citation_ids": self._cites(agent, ids)}))
         a = {"answer": "Stop the conveyor, lock it out, clear the jam.", "steps": ["Lock out", "Clear jam"],
              "citation_ids": self._cites(agent, ids), "safety_notes": ["Apply lockout first."],
              "confidence": "high", "abstain": False}

@@ -38,7 +38,7 @@ def get_config() -> dict:
     cfg["llm"]["provider"] = (os.getenv("LLM_PROVIDER", cfg["llm"]["provider"]).split() or ["mock"])[0].lower()
     cfg["llm"]["model"] = os.getenv("LLM_MODEL", cfg["llm"]["model"])
     if os.getenv("OPENAI_MODEL"):                    # one env var switches every agent's model
-        for role in ("router", "specialist", "synthesizer"):
+        for role in ("router", "specialist", "synthesizer", "critic"):
             cfg["agents"][role]["model"] = os.environ["OPENAI_MODEL"].strip()
     if os.getenv("FAST_AUTH", "").strip().lower() in ("off", "false", "0"):   # local development only
         cfg["auth"]["enabled"] = False

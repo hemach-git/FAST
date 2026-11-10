@@ -51,11 +51,13 @@ agents:
   mode: multi_agent         # multi_agent | pipeline (rule-based fallback)
   prompt_version: "v2.0"
   timeout_s: 25
-  token_budget: 12000       # total tokens (in+out) per question across all agents
+  token_budget: 16000       # total tokens (in+out) per question across all agents (12000 before the critic)
   min_clarify_confidence: 0.5
   router:      { model: gpt-4o-mini, max_tokens: 350 }
   specialist:  { model: gpt-4o-mini, max_tokens: 700, max_steps: 3 }
   synthesizer: { model: gpt-4o-mini, max_tokens: 900 }
+  # Faithfulness critic: labels each claim against the evidence; code removes unsupported steps or abstains.
+  critic:      { enabled: true, model: gpt-4o-mini, max_tokens: 700, max_unsupported_ratio: 0.34 }
 
 auth:
   enabled: true              # false (or FAST_AUTH=off) shows the old role selector, for local development only

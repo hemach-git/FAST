@@ -18,7 +18,7 @@ common.page_header("Traces & logs", "Follow any question step by step: what each
 STATUS_COLORS = {"ok": theme.OK, "abstained": theme.WARN, "blocked": "#6D4C41", "error": theme.DANGER,
                  "timeout": "#C62828", "skipped": "#64748B"}
 AGENT_COLORS = {"router": "#7E57C2", "safety": theme.DANGER, "maintenance": theme.INFO, "quality": theme.OK,
-                "synthesizer": theme.AMBER_DARK, "orchestrator": theme.MUTED}
+                "synthesizer": theme.AMBER_DARK, "critic": "#00897B", "orchestrator": theme.MUTED}
 
 # ------------------------------------------------------------------ filters (shared by every tab)
 with st.container(border=True):

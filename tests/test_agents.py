@@ -45,7 +45,7 @@ def test_jam_plan_routes_maintenance_and_safety(fake):
     assert r.mode == "multi_agent" and r.status == "ok" and not r.used_fallback
     assert r.route.categories[:2] == ["maintenance", "safety"] and r.route.primary == "maintenance"
     assert {"MM-CONV-02"} <= cited_docs(r) and any(c.category == "safety" for c in r.citations)
-    assert {c.agent for c in fake.calls} == {"router", "maintenance", "safety", "synthesizer"}
+    assert {c.agent for c in fake.calls} == {"router", "maintenance", "safety", "synthesizer", "critic"}
 
 
 def test_hazard_override_adds_safety_when_router_omits_it(fake):
@@ -68,7 +68,8 @@ def test_no_hazard_no_safety(fake):
     fake.plan = plan(["maintenance"], queries={"maintenance": "coolant concentration"})
     r = workflow.ask(COOLANT)
     assert r.status == "ok" and r.route.categories == ["maintenance"]
-    assert not fake.calls_for("safety") and not any(s.kind == "guard" for s in r.agent_trace)
+    assert not fake.calls_for("safety")
+    assert not any(s.kind == "guard" and s.name != "faithfulness_check" for s in r.agent_trace)
 
 
 # ---------------------------------------------------------------- specialist scoping

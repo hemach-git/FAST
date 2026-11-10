@@ -127,6 +127,7 @@ def ask(question: str, role: str = "supervisor", user: str = "demo.supervisor",
             resp.mode, resp.agent_trace, resp.route = "multi_agent", agent_res.trace, decision
             usage_in += agent_res.tokens_in
             usage_out += agent_res.tokens_out
+            resp.guardrail_flags += agent_res.flags
             if agent_res.equipment and not resp.equipment_tag:
                 resp.equipment_tag = agent_res.equipment
             if agent_res.clarify:
@@ -196,7 +197,10 @@ def ask(question: str, role: str = "supervisor", user: str = "demo.supervisor",
         if ans.abstain or not cited:
             resp.status = "abstained"
             resp.answer = "Not found in the approved documentation."
-            resp.abstain_reason = "The assistant could not ground an answer in the documents. Please contact your area lead."
+            resp.abstain_reason = (
+                "The drafted answer was not supported by the document text (faithfulness check). "
+                "Please contact your area lead." if "unfaithful_answer" in resp.guardrail_flags else
+                "The assistant could not ground an answer in the documents. Please contact your area lead.")
             return _finish(resp, req, t0, stage, is_synthetic, created_at, [], usage_in, usage_out)
 
         # Safety override check: if safety was routed, a safety citation must be present.

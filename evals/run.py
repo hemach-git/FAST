@@ -147,7 +147,7 @@ def run_mode(mode: str) -> int:
     cases_all = [json.loads(l) for l in (ROOT / "evals" / "golden.jsonl").read_text(encoding="utf-8").splitlines()
                  if l.strip()]
     cases = [c for c in cases_all if mode in c.get("modes", MODES)]
-    agent_models = {k: cfg["agents"][k]["model"] for k in ("router", "specialist", "synthesizer")}
+    agent_models = {k: cfg["agents"][k]["model"] for k in ("router", "specialist", "synthesizer", "critic")}
 
     if mode == "multi_agent" and not live:
         print("!" * 78 + f"\nWARNING: --mode multi_agent but LLM_PROVIDER={provider}: agents are OFF, every answer "
