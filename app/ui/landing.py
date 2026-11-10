@@ -11,11 +11,11 @@ CSS = """<style>
 header[data-testid="stHeader"] {display: none;}
 .block-container {max-width: 1320px; padding: 0.7rem 1.2rem 0.4rem;}
 div[data-testid="stVerticalBlock"] {gap: 0.5rem;}
-.fa-bar {background:#1E293B; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:8px 18px;
-         border-bottom:3px solid #E8590C; border-radius:6px; margin-bottom:.5rem;}
-.fa-bar .t {color:#fff; font-size:1.45rem; font-weight:800; letter-spacing:.34em; white-space:nowrap;}
-.fa-bar .s {color:#F5B781; font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; text-align:center; flex:1;}
-.fa-bar .b {background:#FFE9A8; color:#3B2F00; font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:5px; white-space:nowrap;}
+.fa-bar {background:#DCFCE7; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:8px 18px;
+         border-bottom:3px solid #16A34A; border-radius:6px; margin-bottom:.5rem;}
+.fa-bar .t {color:#14532D; font-size:1.45rem; font-weight:800; letter-spacing:.34em; white-space:nowrap;}
+.fa-bar .s {color:#166534; font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; text-align:center; flex:1;}
+.fa-bar .b {background:#fff; color:#14532D; font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:5px; white-space:nowrap;}
 .fa-hero {background:#fff; border:1px solid #D5DBE3; border-radius:8px; padding:18px 24px; min-height:340px;}
 .fa-eyebrow {color:#64748B; font-size:.76rem; letter-spacing:.08em; text-transform:uppercase;}
 .fa-hero h1 {color:#1E3A5F; font-size:1.8rem; line-height:1.2; margin:.25rem 0 .55rem; padding:0;}
