@@ -4,7 +4,7 @@ You are building the **Streamlit frontend only** for FAST. Floor supervisors ask
 
 **Folder:** `C:\Users\Chepuri\AI-Products\FAST`. **Branch:** same folder, `main`. Touch only frontend files and **do not commit**; the main session commits.
 
-**You own:** `app/main.py`, `app/pages/*`, `app/ui/*`, `.streamlit/config.toml`.
+**You own:** `app/main.py`, `app/views/*`, `app/ui/*`, `.streamlit/config.toml`.
 **Do not edit:** `app/services/*`, `app/models/*`, `app/data/*`, `app/observability/*`, `app/config.py`, `config.yaml`, `tests/*`, `evals/*`.
 
 The backend is **already implemented and working** (mock LLM, synthetic data). Call it; don't reimplement it. On first call it creates `data/fast.db` and seeds synthetic data automatically.
@@ -13,7 +13,7 @@ Put this at the top of `app/main.py` so `import app.*` works when run via `strea
 ```python
 import sys, pathlib; sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 ```
-Pages under `app/pages/` need the same line (use `parent.parent.parent`).
+Pages under `app/views/` need the same line (use `parent.parent.parent`).
 
 ## Interface contract
 
@@ -68,6 +68,17 @@ recent_logs(n=100) -> list[dict]        # JSON log events: ts, event, request_id
 ```
 
 ## Pages
+
+> **Colour palette (one standard).** Deep green and amber, defined once in `app/ui/theme.py`. `.streamlit/config.toml`, the one-page slide, the Word documents and the diagrams use the same values, and `tests/test_theme.py` fails if config.toml drifts from theme.py.
+>
+> | Role | Colour | Used for |
+> |---|---|---|
+> | Deep green `#0F3D2E` | brand | title bar, sidebar, headings, slide header |
+> | Green `#15803D` | primary | buttons, active tabs, toggles, chart bars |
+> | Amber `#F59E0B` / dark amber `#B45309` | accent | underlines, tags, highlights, "synthetic data" badge |
+> | Red / amber / green / blue | meaning (fixed) | danger or safety / waiting / good or approved / maintenance |
+>
+> The `pages/` folder is named `views/` on purpose: a `pages/` folder makes Streamlit draw its own sidebar list before sign-in, which flashed on the landing page.
 
 > **Landing page:** the signed-out page is a landing page (`app/ui/landing.py`): banner, hero with four safeguards, sign-in / request-access card, a five-step "how FAST answers" row and a card per module with its roles.
 >
@@ -127,7 +138,7 @@ Sidebar: FAST logo/title, signed-in name and role with a Sign out button (the ol
 ## Quality bar
 
 - Professional, enterprise industrial look:
-  - Sidebar navigation (`st.navigation`/`st.Page` or `pages/`).
+  - Sidebar navigation (`st.navigation` / `st.Page`; the folder is named `views/` on purpose, because a `pages/` folder makes Streamlit draw its own sidebar list before sign-in).
   - Consistent theme in `.streamlit/config.toml`: dark slate primary, safety orange accent.
   - Cards via `st.container(border=True)` and `st.metric`.
 - Clear spinners, error/success states and empty states.

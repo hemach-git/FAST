@@ -16,24 +16,24 @@ div[data-testid="stVerticalBlock"] {gap: 0.5rem;}
 .fa-bar .t {color:#FFFFFF; font-size:1.45rem; font-weight:800; letter-spacing:.34em; white-space:nowrap;}
 .fa-bar .s {color:#FCD34D; font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; text-align:center; flex:1;}
 .fa-bar .b {background:#FEF3C7; color:#3B2F00; font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:5px; white-space:nowrap;}
-.fa-hero {background:#fff; border:1px solid #D5DBE3; border-radius:8px; padding:18px 24px; min-height:340px;}
+.fa-hero {background:#fff; border:1px solid #CFE0D5; border-radius:8px; padding:18px 24px; min-height:340px;}
 .fa-eyebrow {color:#64748B; font-size:.76rem; letter-spacing:.08em; text-transform:uppercase;}
-.fa-hero h1 {color:#1E3A5F; font-size:1.8rem; line-height:1.2; margin:.25rem 0 .55rem; padding:0;}
+.fa-hero h1 {color:#0F3D2E; font-size:1.8rem; line-height:1.2; margin:.25rem 0 .55rem; padding:0;}
 .fa-hero p {color:#334155; font-size:1.02rem; line-height:1.5; margin:0 0 .9rem;}
 .fa-label {color:#475569; font-size:.74rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin:.2rem 0 .25rem;}
 .fa-guards {display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:10px;}
-.fa-guard {border-left:3px solid #2E7D32; padding-left:9px;}
-.fa-guard b {display:block; color:#1E3A5F; font-size:.95rem; margin-bottom:2px;}
+.fa-guard {border-left:3px solid #15803D; padding-left:9px;}
+.fa-guard b {display:block; color:#0F3D2E; font-size:.95rem; margin-bottom:2px;}
 .fa-guard span {display:block; color:#475569; font-size:.85rem; line-height:1.38;}
-.fa-h {color:#1E3A5F; font-size:1.02rem; font-weight:700; margin:6px 0 5px;}
+.fa-h {color:#0F3D2E; font-size:1.02rem; font-weight:700; margin:6px 0 5px;}
 .fa-h small {color:#64748B; font-size:.76rem; font-weight:400; margin-left:8px;}
 .fa-grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px;}
-.fa-card {background:#fff; border:1px solid #D5DBE3; border-radius:7px; padding:8px 11px; display:flex; flex-direction:column;}
-.fa-card b {color:#1E3A5F; font-size:.86rem; margin-bottom:2px;}
+.fa-card {background:#fff; border:1px solid #CFE0D5; border-radius:7px; padding:8px 11px; display:flex; flex-direction:column;}
+.fa-card b {color:#0F3D2E; font-size:.86rem; margin-bottom:2px;}
 .fa-card span {display:block; color:#475569; font-size:.77rem; line-height:1.32; flex:1;}
 .fa-card em {color:#64748B; font-size:.7rem; font-style:normal; margin-top:5px;}
-.fa-ai {border-top:3px solid #E8590C;}
-.fa-code {border-top:3px solid #1E3A5F;}
+.fa-ai {border-top:3px solid #F59E0B;}
+.fa-code {border-top:3px solid #0F3D2E;}
 .fa-foot {text-align:center; color:#64748B; font-size:.74rem; padding:4px 0 0;}
 </style>"""
 

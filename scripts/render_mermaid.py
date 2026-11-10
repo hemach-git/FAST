@@ -20,7 +20,7 @@ HTML = """<!doctype html><html><head><meta charset="utf-8">
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
 <style>body{margin:0;background:#fff;font-family:Arial} #c{display:inline-block;padding:16px}</style></head>
 <body><div id="c"><pre class="mermaid">%s</pre></div>
-<script>mermaid.initialize({startOnLoad:true, theme:'default', themeVariables:{fontSize:'18px'},
+<script>mermaid.initialize({startOnLoad:true, theme:'base', themeVariables:{fontSize:'18px', primaryColor:'#E3EDE6', primaryBorderColor:'#0F3D2E', primaryTextColor:'#16251E', lineColor:'#0F3D2E', secondaryColor:'#FEF3C7', tertiaryColor:'#F3F7F4'},
 flowchart:{nodeSpacing:30, rankSpacing:35, htmlLabels:true, useMaxWidth:false}, sequence:{mirrorActors:false, useMaxWidth:false}, er:{useMaxWidth:false}});</script>
 </body></html>"""
 

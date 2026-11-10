@@ -110,7 +110,7 @@ sequenceDiagram
 ```
 FAST/
 ├── app/
-│   ├── main.py, pages/, ui/          Streamlit frontend [built]: Ask, Documents (approve / advise / reject),
+│   ├── main.py, views/, ui/          Streamlit frontend [built]: Ask, Documents (approve / advise / reject),
 │   │                                 Review queue, Analytics, Diagnostics, Traces & logs (admin), Users & access (admin)
 │   ├── agents/                       [built]
 │   │   ├── base.py                   agent runner: tool loop, caps, trace

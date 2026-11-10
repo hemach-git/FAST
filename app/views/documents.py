@@ -6,12 +6,12 @@ import json
 import streamlit as st
 
 from app.services import docs_admin
-from app.ui import common
+from app.ui import common, theme
 from app.ui.common import CAT_COLORS, CAT_LABELS, chip, esc, pill
 
 common.init()
 mgr = common.is_manager()
-STATUS_COLORS = {"published": "#2E7D32", "draft": "#F9A825", "rejected": "#C62828", "retired": "#64748B"}
+STATUS_COLORS = {"published": theme.OK, "draft": theme.WARN, "rejected": theme.DANGER, "retired": theme.MUTED}
 CATS = ["safety", "maintenance", "quality"]
 
 EXAMPLE = """## 1. Purpose
@@ -79,7 +79,7 @@ def new_doc_form() -> None:
             st.error(f"Could not submit: {exc}")
 
 
-STATE_LABELS = {"awaiting_review": ("Awaiting review", "#F9A825"), "changes_requested": ("Changes requested", "#EF6C00")}
+STATE_LABELS = {"awaiting_review": ("Awaiting review", theme.WARN), "changes_requested": ("Changes requested", theme.AMBER_DARK)}
 
 
 def history(doc_id: str) -> None:

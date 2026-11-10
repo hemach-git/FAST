@@ -25,7 +25,7 @@ def card(item: dict, resolvable: bool) -> None:
         if common.is_admin() and item.get("query_id"):
             if st.button("Open trace", key=f"tr_{fid}", icon=":material/account_tree:"):
                 st.session_state["open_trace"] = item["query_id"]
-                st.switch_page("pages/traces.py")
+                st.switch_page("views/traces.py")
         if resolvable:
             note = st.text_input("Note", key=f"rq_note_{fid}")
             a, b, _ = st.columns([1, 1, 3])

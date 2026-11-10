@@ -7,7 +7,7 @@ Agreed **before** the sessions split. The Main session implements these. The Tes
 | Session | Files |
 |---|---|
 | Main | `app/services/llm.py`, `app/services/workflow.py`, `app/services/router.py`, `app/agents/*`, `config.yaml`, `requirements.txt` |
-| Frontend | `app/main.py`, `app/pages/*`, `app/ui/*`, `.streamlit/*` |
+| Frontend | `app/main.py`, `app/views/*`, `app/ui/*`, `.streamlit/*` |
 | Tests + evals | `tests/*`, `evals/*` |
 | Docs (done) | `docs/*`, `README.md`, `scripts/*` |
 

@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 
 from app.services import observability as obs
-from app.ui import common
+from app.ui import common, theme
 from app.ui.common import esc, pill
 
 common.init()
@@ -15,10 +15,10 @@ common.require_admin()
 common.page_header("Traces & logs", "Follow any question step by step: what each agent saw, did and cost. "
                    "Aggregate the metrics and drill down to the individual traces.")
 
-STATUS_COLORS = {"ok": "#2E7D32", "abstained": "#F9A825", "blocked": "#6D4C41", "error": "#C62828",
+STATUS_COLORS = {"ok": theme.OK, "abstained": theme.WARN, "blocked": "#6D4C41", "error": theme.DANGER,
                  "timeout": "#C62828", "skipped": "#64748B"}
-AGENT_COLORS = {"router": "#7E57C2", "safety": "#C62828", "maintenance": "#1565C0", "quality": "#2E7D32",
-                "synthesizer": "#EF6C00", "orchestrator": "#64748B"}
+AGENT_COLORS = {"router": "#7E57C2", "safety": theme.DANGER, "maintenance": theme.INFO, "quality": theme.OK,
+                "synthesizer": theme.AMBER_DARK, "orchestrator": theme.MUTED}
 
 # ------------------------------------------------------------------ filters (shared by every tab)
 with st.container(border=True):
@@ -67,7 +67,7 @@ def render_detail(qid: str) -> None:
             + pill(q["mode"], "#455A64") + " "
             + (pill("fell back to rule-based", "#C62828") if q["used_fallback"] else "") + " "
             + (pill("emergency", "#B71C1C") if q["emergency"] else "") + " "
-            + (pill("synthetic", "#E8590C") if q["is_synthetic"] else ""), unsafe_allow_html=True)
+            + (pill("synthetic", theme.AMBER_DARK) if q["is_synthetic"] else ""), unsafe_allow_html=True)
         st.markdown(f"**Question:** {esc(q['question_masked'])}")
         st.caption(f"{q['query_id']} · {q['request_id']} · {q['created_at'][:19]} · {q['user_name']} ({q['role']}) · "
                    f"model {q['model']} · routed to {', '.join(q['routed_categories']) or '-'}")
@@ -175,7 +175,7 @@ with tab_metrics:
             ch = alt.Chart(agg).mark_bar(cornerRadius=3).encode(
                 x=alt.X("group:N", sort=None, title=obs.GROUP_BYS[group]),
                 y=alt.Y("value:Q", title=obs.METRICS[metric]),
-                tooltip=["group", "value", "n"], color=alt.value("#1565C0")).properties(height=280)
+                tooltip=["group", "value", "n"], color=alt.value(theme.PRIMARY)).properties(height=280)
             st.altair_chart(ch, width="stretch")
             st.markdown("**Drill down:** click a row to list the questions behind it.")
             ev = st.dataframe(agg.rename(columns={"group": obs.GROUP_BYS[group], "value": obs.METRICS[metric], "n": "questions"}),

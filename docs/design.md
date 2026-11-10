@@ -127,7 +127,7 @@ Also tracked per question: tokens, LLM calls, and estimated cost.
 | Session | Owns | Job |
 |---|---|---|
 | Main | `app/services/llm.py`, `workflow.py`, `router.py`, `app/agents/*`, `config.yaml` | OpenAI adapter, router, specialists, synthesizer, fallback switch |
-| Frontend | `app/main.py`, `app/pages/*`, `app/ui/*`, `.streamlit/` | UI, including an "agent activity" panel |
+| Frontend | `app/main.py`, `app/views/*`, `app/ui/*`, `.streamlit/` | UI, including an "agent activity" panel |
 | Tests + evals | `tests/*`, `evals/*` | Fake-LLM agent tests, paraphrase cases, mode comparison |
 
 **MVP:** router, three specialists, synthesizer, fallback switch.

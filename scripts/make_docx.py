@@ -68,7 +68,7 @@ def convert(md_files: list[Path], out: Path, title: str) -> None:
     t = doc.add_heading(title, 0)
     p = doc.add_paragraph()
     r = p.add_run("SYNTHETIC DATA - prototype documentation")
-    r.bold, r.font.color.rgb = True, RGBColor(0xC0, 0x50, 0x00)
+    r.bold, r.font.color.rgb = True, RGBColor(0xB4, 0x53, 0x09)
     for md in md_files:
         lines = md.read_text(encoding="utf-8").splitlines()
         i = 0

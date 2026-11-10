@@ -9,9 +9,9 @@ from streamlit.testing.v1 import AppTest
 from app.services import users
 
 ROOT = Path(__file__).resolve().parent.parent
-PAGES = {"ask": "pages/ask.py", "documents": "pages/documents.py", "review": "pages/review_queue.py",
-         "analytics": "pages/analytics.py", "diagnostics": "pages/diagnostics.py", "traces": "pages/traces.py",
-         "users": "pages/users.py"}
+PAGES = {"ask": "views/ask.py", "documents": "views/documents.py", "review": "views/review_queue.py",
+         "analytics": "views/analytics.py", "diagnostics": "views/diagnostics.py", "traces": "views/traces.py",
+         "users": "views/users.py"}
 ALLOWED = {"supervisor": {"ask", "documents"},
            "manager": {"ask", "documents", "review", "analytics", "diagnostics"},
            "admin": set(PAGES)}
@@ -50,7 +50,7 @@ def test_every_page_renders_for_every_role(page, role):
 
 
 def test_login_with_wrong_password_shows_error_and_stays_signed_out():
-    at = AppTest.from_file(str(ROOT / "app/pages/ask.py"), default_timeout=60).run()
+    at = AppTest.from_file(str(ROOT / "app/views/ask.py"), default_timeout=60).run()
     at.text_input[0].set_value("admin")
     at.text_input[1].set_value("definitely-wrong-1A")
     at.button[0].click()
@@ -64,7 +64,7 @@ def test_disabled_account_is_signed_out_on_next_page_run():
     admin = {"username": "admin", "role": "admin"}
     u.request_access("ui.disabled", "Ui Disabled", "Strong-Pass-1x")
     u.decide_access("ui.disabled", "approved", admin, "supervisor")
-    at = AppTest.from_file(str(ROOT / "app/pages/ask.py"), default_timeout=60)
+    at = AppTest.from_file(str(ROOT / "app/views/ask.py"), default_timeout=60)
     at.session_state["auth_user"] = u.get_user("ui.disabled")
     at.run()
     assert not at.exception and at.title            # signed in: sees the page
@@ -80,7 +80,7 @@ def test_traces_page_shows_detail_for_an_agent_run(monkeypatch):
     fake = FakeLLM().install(monkeypatch)
     fake.plan = plan(["maintenance"], queries={"maintenance": "coolant concentration"})
     r = workflow.ask(COOLANT, "supervisor", "ui.trace")
-    at = AppTest.from_file(str(ROOT / "app/pages/traces.py"), default_timeout=60)
+    at = AppTest.from_file(str(ROOT / "app/views/traces.py"), default_timeout=60)
     at.session_state["auth_user"] = users.get_user("admin")
     at.session_state["open_trace"] = r.query_id
     at.run()

@@ -7,11 +7,11 @@ import streamlit as st
 
 from app.config import db_path, get_config, model_label
 from app.services import users, workflow
-from app.ui import landing
+from app.ui import landing, theme
 
 ROLES = {"Floor Supervisor": "supervisor", "Plant Manager": "manager", "Administrator": "admin"}
 ROLE_LABELS = {v: k for k, v in ROLES.items()}
-CAT_COLORS = {"safety": "#C62828", "maintenance": "#1565C0", "quality": "#2E7D32"}
+CAT_COLORS = {"safety": theme.DANGER, "maintenance": theme.INFO, "quality": theme.OK}
 CAT_LABELS = {"safety": "Safety", "maintenance": "Maintenance", "quality": "Quality"}
 
 CSS = """
@@ -21,12 +21,12 @@ CSS = """
        font-size:0.85rem; margin:0 6px 6px 0;}
 .chip-muted {background:#64748B;}
 .pill {display:inline-block; padding:2px 10px; border-radius:10px; font-size:0.8rem; font-weight:600;}
-.synthetic-badge {background:#E8590C; color:#fff; padding:4px 10px; border-radius:6px;
+.synthetic-badge {background:#F59E0B; color:#3B2F00; padding:4px 10px; border-radius:6px;
        font-size:0.75rem; font-weight:700; letter-spacing:.04em; text-align:center; margin:4px 0;}
 .emergency {background:#B71C1C; color:#fff; padding:16px 20px; border-radius:8px; font-size:1.15rem;
        font-weight:700; margin-bottom:12px; border-left:8px solid #FFEB3B;}
 .small-muted {color:#64748B; font-size:0.8rem;}
-[data-testid="stMetric"] {background:#fff; border:1px solid #D5DBE3; border-radius:8px; padding:10px 14px;}
+[data-testid="stMetric"] {background:#fff; border:1px solid #CFE0D5; border-radius:8px; padding:10px 14px;}
 </style>
 """
 
@@ -151,7 +151,7 @@ def login_gate() -> None:
 
 def sidebar_identity() -> None:
     with st.sidebar:
-        st.markdown("## :orange[FAST]")
+        st.markdown(f"<h2 style='color:{theme.AMBER}; margin:0'>FAST</h2>", unsafe_allow_html=True)
         st.caption("Floor Assistant for Supervisors and Technicians")
         u = current_user()
         if u:

@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from app.services import users
-from app.ui import common
+from app.ui import common, theme
 from app.ui.common import ROLE_LABELS, esc, pill
 
 common.init()
@@ -12,7 +12,7 @@ common.require_admin()
 me = common.current_user() or {"username": common.user(), "role": "admin"}
 common.page_header("Users & access", "Approve or deny access requests, manage roles and accounts. Every decision is audited.")
 
-STATUS_COLORS = {"approved": "#2E7D32", "pending": "#F9A825", "denied": "#C62828", "disabled": "#64748B"}
+STATUS_COLORS = {"approved": theme.OK, "pending": theme.WARN, "denied": theme.DANGER, "disabled": theme.MUTED}
 if not common.auth_enabled():
     st.warning("Sign-in is switched off (development mode), so these roles are not enforced. Turn it on in config.yaml.")
 

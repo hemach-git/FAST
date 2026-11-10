@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from app.services import audit, docs_admin, workflow
-from app.ui import common
+from app.ui import common, theme
 from app.ui.common import CAT_COLORS, CAT_LABELS, chip, esc, pill
 
 common.init()
@@ -17,7 +17,7 @@ DEMOS = [
     "There is a chemical spill near Paint Booth 1",
     "What is the cafeteria menu today?",
 ]
-CONF_COLORS = {"high": "#2E7D32", "medium": "#F9A825", "low": "#C62828"}
+CONF_COLORS = {"high": theme.OK, "medium": theme.WARN, "low": theme.DANGER}
 CONF_LABELS = {"high": "High confidence", "medium": "Medium confidence", "low": "Low confidence"}
 
 
@@ -52,7 +52,7 @@ def render_route(resp) -> None:
             label += " - also checked"
         chips += chip(label, CAT_COLORS.get(cat, "#475569"))
     if r.safety_flag:
-        chips += chip("Safety added: hazard detected", "#E8590C")
+        chips += chip("Safety added: hazard detected", theme.AMBER_DARK)
     if r.broad_search:
         chips += chip("Searched all sources", "#64748B")
     st.markdown(chips, unsafe_allow_html=True)
@@ -117,7 +117,7 @@ def render_trace(resp) -> None:
         return
     with st.expander("How FAST answered"):
         if resp.mode == "multi_agent":
-            st.markdown(pill("AI agents", "#1E293B"), unsafe_allow_html=True)
+            st.markdown(pill("AI agents", theme.DEEP), unsafe_allow_html=True)
         else:
             st.markdown(pill("Rule-based", "#64748B"), unsafe_allow_html=True)
         if resp.used_fallback:
