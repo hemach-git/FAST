@@ -14,6 +14,8 @@ def isolated_db(tmp_path_factory):
     os.environ["FAST_DB_PATH"] = str(d / "test.db")
     os.environ["FAST_LOG_DIR"] = str(d / "logs")
     os.environ["LLM_PROVIDER"] = "mock"
+    os.environ["FAST_EMBEDDER"] = "hash"      # hybrid wiring without model downloads; real models: evals
+    os.environ["FAST_RERANKER"] = "none"
     from app.config import get_config
     get_config.cache_clear()
     from app.services import retriever, workflow

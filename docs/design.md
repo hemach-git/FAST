@@ -1,8 +1,8 @@
 # FAST: Design v2 (AI-powered, supervised multi-agent)
 
-> **Status (2026-11-09).**
-> - **v1 (built, tested):** rule-based pipeline with a mock LLM. 107 automated tests; 32/32 rule-based evals pass, which checks the wiring only.
-> - **v2 (built):** LLM agents for routing, research and answer writing, plus the Streamlit UI. **Formal live eval: 44/45 passed** on 45 synthetic cases (routing 96.3%, correct document cited 97.1%, abstain 100%, safety included 100%); p95 latency 8.7-10.9 s misses the 8 s goal.
+> **Status (2026-11-10).**
+> - **v1 (built, tested):** rule-based pipeline with a mock LLM. 160 automated tests; rule-based eval gate in CI (49/54 applicable cases, 5 documented known gaps), which checks the wiring only.
+> - **v2 (built):** LLM agents for routing, research and answer writing, plus the Streamlit UI. **Latest live eval (hybrid search + faithfulness critic): 63/67** on 67 synthetic cases (routing 95.5%, correct document cited 94.3%, abstain 100%, safety included 81.8%); p95 latency 25.1 s misses the 8 s goal. Earlier run (BM25 only, no critic, 45 cases): 44/45, p95 8.7-10.9 s.
 > - **Provider:** OpenAI `gpt-4o-mini` is the first target. The interface is provider-agnostic, so Claude plugs in the same way.
 
 Diagrams: [architecture.md](architecture.md) and [data_model.md](data_model.md). Agent interfaces: [agents_contract.md](agents_contract.md).
@@ -19,7 +19,7 @@ Diagrams: [architecture.md](architecture.md) and [data_model.md](data_model.md).
 - **R7.** Supervisors flag wrong answers; managers review them.
 - **R8.** Ambiguous question: ask one clarifying question, or search broadly and say so.
 - **R9 (stretch).** Manager insights: cluster unanswered questions into documentation gaps, summarize recurring issues, draft a document update (human approves).
-- **Non-functional:** p95 under 8 s in agent mode (assumption to confirm: `targets.p95_latency_ms_agent` in config.yaml) (**measured p95 8.7 s in one run and 10.9 s in the next, p50 5.8 s: not met**), under 1 s in the rule-based fallback, runs locally, no secrets in the repo, every request traceable.
+- **Non-functional:** p95 under 8 s in agent mode (assumption to confirm: `targets.p95_latency_ms_agent` in config.yaml) (**latest p95 25.1 s, p50 7.6 s with the critic on; before the critic p95 8.7-10.9 s: not met**), under 1 s in the rule-based fallback, runs locally, no secrets in the repo, every request traceable.
 
 **Never list**
 - NEVER give a safety answer without citing the safety procedure; never suggest skipping a safety step.
@@ -42,7 +42,7 @@ Diagrams: [architecture.md](architecture.md) and [data_model.md](data_model.md).
 | **Router agent:** understands intent, picks sources, extracts equipment, flags hazards, rewrites the question into one search query per source, asks for clarification | **Orchestrator:** fixed order of stages, parallel dispatch, caps, timeouts, fallback |
 | **Safety / Maintenance / Quality specialist agents:** each searches its own manuals with tools and returns cited findings | **Guardrails:** injection blocking, emergency detection, PII masking |
 | **Synthesizer agent:** merges findings into one structured answer, safety first, notes conflicts and gaps | **Hazard override:** keyword rules ∪ router flag → Safety always runs |
-| *Stretch:* **Critic agent** (checks claims), **Insights agent** (manager summaries), embeddings (semantic search) | **Retriever:** published-only filter, per-category index. **Grounding check:** every citation must be a retrieved section. **Audit, logging, analytics** |
+| **Critic agent** (built): checks each claim against the evidence text. *Stretch:* **Insights agent** (manager summaries) | **Retriever:** published-only filter, hybrid BM25 + embeddings (RRF), per-category cap. **Grounding check:** every citation must be a retrieved section. **Audit, logging, analytics** |
 
 **Why supervised multi-agent:** the three sources are natural specialist domains, and parallel specialists keep latency down. Code owns the control flow so the safety rules, caps and approvals cannot be talked around by a model.
 
@@ -105,7 +105,7 @@ Also:
 
 Also tracked per question: tokens, LLM calls, and estimated cost.
 
-**Faithfulness:** manual check on the multi-route cases. An LLM judge is a stretch goal, and judge bias would have to be calibrated against human labels.
+**Faithfulness:** the critic agent checks each claim at answer time (unsupported steps removed, an unsupported answer abstains, safety notes only flagged). An offline LLM judge is still a stretch goal, and judge bias would have to be calibrated against human labels.
 
 **Mode comparison:** run the same golden set in `pipeline` and `multi_agent` mode and report both.
 
@@ -117,8 +117,8 @@ Also tracked per question: tokens, LLM calls, and estimated cost.
 |---|---|---|---|
 | Orchestration | Supervised multi-agent (code controls flow) | Free-running autonomous agents; the v1 single pass | Specialist reasoning and parallelism, with safety and cost still bounded |
 | Models | One small model for all agents | A stronger model everywhere | Latency and cost; **upgrade the synthesizer only if evals show unsupported claims** |
-| Retrieval | BM25 plus agent query rewriting | Embeddings now | Fits the time box; embeddings are the next step |
-| Checking | Deterministic grounding check | LLM critic | A code check cannot be persuaded; the critic is a stretch goal |
+| Retrieval | Hybrid: BM25 + local `bge-small` embeddings, RRF fusion, plus agent query rewriting | Cross-encoder reranker (built, off) | Retrieval eval top-1 hit 88.6% → 100%; the reranker misranked emergency questions |
+| Checking | Deterministic grounding check plus an LLM critic | ~5 s extra latency per answer | Code proves a citation exists and cannot be persuaded; the critic checks that the text supports the claim |
 | Latency vs depth | Parallel specialists, capped steps | Deeper multi-step research | A supervisor needs an answer in seconds |
 | Vendor | OpenAI today (the key available) | Claude today | The adapter keeps Claude swappable; compare both on the golden set later |
 
@@ -131,8 +131,9 @@ Also tracked per question: tokens, LLM calls, and estimated cost.
 | Tests + evals | `tests/*`, `evals/*` | Fake-LLM agent tests, paraphrase cases, mode comparison |
 
 **MVP:** router, three specialists, synthesizer, fallback switch.
-**Stretch (not built):** critic, insights agent, embeddings, LLM judge.
-**Next:** real documents from one plant line, sign-in, faster answers, a second AI check on answers (the critic).
+**Stretch (not built):** insights agent, LLM judge.
+**Built after the window:** faithfulness critic, hybrid retrieval, CI eval gate, 67-case golden set.
+**Next:** real documents from one plant line, sign-in, faster answers (run the critic only where it matters), document review dates.
 The rule-based pipeline stays behind `agents.mode: pipeline` as the safety net.
 
 ## 8. Administrator capabilities (added after the first release)
