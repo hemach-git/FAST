@@ -1,0 +1,175 @@
+{
+  "k": 3,
+  "n_cases": 35,
+  "configs": {
+    "bm25": {
+      "embedder": null,
+      "reranker": null,
+      "hit@1": 0.886,
+      "hit@3": 1.0,
+      "mrr@10": 0.933,
+      "hit@1_by_type": {
+        "edge_draft_leak": "1/1",
+        "edge_emergency": "0/2",
+        "edge_pii": "1/1",
+        "hazard": "1/1",
+        "multi_route": "5/5",
+        "paraphrase": "8/10",
+        "positive": "15/15"
+      },
+      "latency_ms_mean": 0.2,
+      "latency_ms_p95": 0.2,
+      "misses": [
+        {
+          "id": "E03",
+          "expected": "SOP-EMR-02",
+          "rank": 2,
+          "top": [
+            "SOP-PPE-01",
+            "SOP-EMR-02",
+            "MM-PRESS-01"
+          ]
+        },
+        {
+          "id": "E04",
+          "expected": "SOP-EMR-02",
+          "rank": 3,
+          "top": [
+            "SOP-FLT-06",
+            "MM-PRESS-01",
+            "SOP-EMR-02"
+          ]
+        },
+        {
+          "id": "A06",
+          "expected": "MM-COMP-03",
+          "rank": 2,
+          "top": [
+            "SOP-CHEM-03",
+            "MM-COMP-03",
+            "QC-TORQ-01"
+          ]
+        },
+        {
+          "id": "A10",
+          "expected": "SOP-FLT-06",
+          "rank": 3,
+          "top": [
+            "MM-ROB-05",
+            "MM-CONV-02",
+            "SOP-FLT-06"
+          ]
+        }
+      ]
+    },
+    "hybrid_hash": {
+      "embedder": "hash-v1",
+      "reranker": null,
+      "hit@1": 0.943,
+      "hit@3": 1.0,
+      "mrr@10": 0.967,
+      "hit@1_by_type": {
+        "edge_draft_leak": "1/1",
+        "edge_emergency": "1/2",
+        "edge_pii": "1/1",
+        "hazard": "1/1",
+        "multi_route": "4/5",
+        "paraphrase": "10/10",
+        "positive": "15/15"
+      },
+      "latency_ms_mean": 0.3,
+      "latency_ms_p95": 0.3,
+      "misses": [
+        {
+          "id": "M02",
+          "expected": "MM-PRESS-01",
+          "rank": 3,
+          "top": [
+            "QC-DIM-02",
+            "SOP-LOTO-04",
+            "MM-PRESS-01"
+          ]
+        },
+        {
+          "id": "E04",
+          "expected": "SOP-EMR-02",
+          "rank": 2,
+          "top": [
+            "MM-PRESS-01",
+            "SOP-EMR-02",
+            "SOP-FLT-06"
+          ]
+        }
+      ]
+    },
+    "hybrid_local": {
+      "embedder": "BAAI/bge-small-en-v1.5",
+      "reranker": null,
+      "hit@1": 1.0,
+      "hit@3": 1.0,
+      "mrr@10": 1.0,
+      "hit@1_by_type": {
+        "edge_draft_leak": "1/1",
+        "edge_emergency": "2/2",
+        "edge_pii": "1/1",
+        "hazard": "1/1",
+        "multi_route": "5/5",
+        "paraphrase": "10/10",
+        "positive": "15/15"
+      },
+      "latency_ms_mean": 16.6,
+      "latency_ms_p95": 20.0,
+      "misses": []
+    },
+    "hybrid_local_rerank": {
+      "embedder": "BAAI/bge-small-en-v1.5",
+      "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+      "hit@1": 0.914,
+      "hit@3": 1.0,
+      "mrr@10": 0.952,
+      "hit@1_by_type": {
+        "edge_draft_leak": "1/1",
+        "edge_emergency": "0/2",
+        "edge_pii": "1/1",
+        "hazard": "1/1",
+        "multi_route": "5/5",
+        "paraphrase": "9/10",
+        "positive": "15/15"
+      },
+      "latency_ms_mean": 84.1,
+      "latency_ms_p95": 115.6,
+      "misses": [
+        {
+          "id": "E03",
+          "expected": "SOP-EMR-02",
+          "rank": 3,
+          "top": [
+            "SOP-PPE-01",
+            "MM-PRESS-01",
+            "SOP-EMR-02"
+          ]
+        },
+        {
+          "id": "E04",
+          "expected": "SOP-EMR-02",
+          "rank": 2,
+          "top": [
+            "MM-PRESS-01",
+            "SOP-EMR-02",
+            "SOP-PPE-01"
+          ]
+        },
+        {
+          "id": "A10",
+          "expected": "SOP-FLT-06",
+          "rank": 2,
+          "top": [
+            "MM-CONV-02",
+            "SOP-FLT-06",
+            "MM-ROB-05"
+          ]
+        }
+      ]
+    }
+  }
+}

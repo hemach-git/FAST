@@ -112,7 +112,7 @@ def mock_answer(question: str, chunks: list[dict], route_cats: list[str]) -> tup
     answer = _focused(question, _sentences(prose)) or (f"Follow the steps in {primary['doc_key']} section '{primary['section']}'.")
     cites = [primary["chunk_id"]]
     for c in chunks:  # a strong second section from the same category
-        if c is not primary and c["category"] == primary["category"] and c["score"] >= 0.75 * primary["score"]:
+        if c is not primary and c["category"] == primary["category"] and c.get("rank_score", c["score"]) >= 0.75 * primary.get("rank_score", primary["score"]):
             cites.append(c["chunk_id"])
             break
     safety_notes: list[str] = []

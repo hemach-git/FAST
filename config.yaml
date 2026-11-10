@@ -25,6 +25,19 @@ retrieval:
   max_chunk_chars: 1200
   abstain_min_score: 3.0    # BM25 score of best chunk below this -> abstain
   min_query_coverage: 0.3   # fraction of query terms that must appear in best chunk
+  # Hybrid retrieval (env FAST_RETRIEVAL_MODE / FAST_EMBEDDER / FAST_RERANKER override)
+  mode: hybrid              # bm25 | hybrid (BM25 + dense, RRF fusion, then reranker)
+  embedder: local           # local (sentence-transformers) | openai | hash (offline, deterministic)
+  embed_model: BAAI/bge-small-en-v1.5
+  openai_embed_model: text-embedding-3-small
+  reranker: none            # cross_encoder | none. Off by default: on the golden set the general ms-marco
+                            # cross-encoder lowered hit@1 (1.000 -> 0.914) and added ~85 ms (evals/retrieval_eval.py)
+  rerank_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+  candidates: 20            # per retriever, per category, before fusion
+  rrf_k: 60                 # Reciprocal Rank Fusion constant
+  rerank_top_n: 12          # fused candidates sent to the reranker
+  rerank_min: 0.5           # reranker relevance that counts as strong evidence (abstain gate, dense-only hits)
+  dense_min: 0.6            # without a reranker: cosine a dense-only hit needs to be kept
 
 guardrails:
   min_question_chars: 3

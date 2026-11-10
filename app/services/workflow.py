@@ -70,11 +70,24 @@ def _validate_llm(raw: str) -> LLMAnswer:
 
 
 def _abstain_reason(hits: list[dict]) -> str:
+    """Answer only if the top-ranked hit or the best-BM25 hit is strong enough.
+
+    Strong = BM25 score and query-term coverage above the config thresholds, OR (hybrid with reranker) a
+    cross-encoder relevance >= rerank_min - which lets a paraphrased question through without lowering the
+    lexical bar. In bm25 mode both candidates are the same hit, so behaviour is unchanged.
+    """
     rc = get_config()["retrieval"]
     if not hits:
         return "No matching section was found in the published documentation."
-    best = hits[0]
-    if best["score"] < rc["abstain_min_score"] or best["coverage"] < rc["min_query_coverage"]:
+
+    def strong(h: dict) -> bool:
+        if h["score"] >= rc["abstain_min_score"] and h["coverage"] >= rc["min_query_coverage"]:
+            return True
+        return h.get("rerank") is not None and h["rerank"] >= rc.get("rerank_min", 0.5)
+
+    top_ranked = max(hits, key=lambda h: h.get("rank_score", h["score"]))
+    best_lexical = max(hits, key=lambda h: h["score"])
+    if not (strong(top_ranked) or strong(best_lexical)):
         return "The documentation does not clearly cover this question."
     return ""
 
@@ -151,12 +164,11 @@ def ask(question: str, role: str = "supervisor", user: str = "demo.supervisor",
             t = time.perf_counter()
             hits = retriever.search(req.question, decision.categories, top_k=cfg["retrieval"]["top_k_per_category"])
             # Keep the primary category's evidence first, then others; cap context size.
-            hits.sort(key=lambda h: (h["category"] != decision.primary, -h["score"]))
+            hits.sort(key=lambda h: (h["category"] != decision.primary, -h.get("rank_score", h["score"])))
             hits = hits[: cfg["retrieval"]["max_context_chunks"]]
             stage["retrieve"] = _ms(t)
             primary_hits = [h for h in hits if h["category"] == decision.primary] or hits
-            reason = _abstain_reason(sorted(primary_hits, key=lambda h: -h["score"]) if not decision.broad_search
-                                     else sorted(hits, key=lambda h: -h["score"]))
+            reason = _abstain_reason(primary_hits if not decision.broad_search else hits)
             if reason and not resp.emergency:
                 resp.status, resp.abstain_reason = "abstained", reason + " Please contact your area lead or the document owner."
                 resp.answer = "Not found in the approved documentation."
