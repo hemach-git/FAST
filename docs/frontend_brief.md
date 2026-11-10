@@ -69,6 +69,8 @@ recent_logs(n=100) -> list[dict]        # JSON log events: ts, event, request_id
 
 ## Pages
 
+> **Landing page:** the signed-out page is a landing page (`app/ui/landing.py`): banner, hero with four safeguards, sign-in / request-access card, a five-step "how FAST answers" row and a card per module with its roles.
+>
 > **Update:** sign-in replaced the role selector. The role comes from the signed-in account (`common.role()`); the selector only appears when `auth.enabled: false`. Added pages: *Traces & logs* and *Users & access* (administrators), and *Advise changes* on Documents.
 
 Sidebar: FAST logo/title, signed-in name and role with a Sign out button (the old **role selector** and user name only in development mode). Manager-only pages are hidden or disabled for supervisors. Show a persistent **"SYNTHETIC DATA - demo only"** badge and `model_label()` (it says `mock-extractive-v1` for now).

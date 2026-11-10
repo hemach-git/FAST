@@ -1,5 +1,5 @@
 ============================= test session starts =============================
-platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\Chepuri\AppData\Local\Python\pythoncore-3.14-64\python.exe
+platform win32 -- Python 3.14.6, pytest-9.2.0, pluggy-1.7.0 -- C:\Users\Chepuri\AI-Products\FAST\.venv\Scripts\python.exe
 cachedir: .pytest_cache
 rootdir: C:\Users\Chepuri\AI-Products\FAST
 plugins: anyio-4.16.0
@@ -113,4 +113,4 @@ tests/test_workflow_admin.py::test_health PASSED                         [ 98%]
 tests/test_workflow_admin.py::test_llm_bad_output_falls_back PASSED      [ 99%]
 tests/test_workflow_admin.py::test_ungrounded_citation_is_dropped PASSED [100%]
 
-============================= 107 passed in 9.20s =============================
+============================= 107 passed in 8.94s =============================

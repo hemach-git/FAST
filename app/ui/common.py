@@ -7,6 +7,7 @@ import streamlit as st
 
 from app.config import db_path, get_config, model_label
 from app.services import users, workflow
+from app.ui import landing
 
 ROLES = {"Floor Supervisor": "supervisor", "Plant Manager": "manager", "Administrator": "admin"}
 ROLE_LABELS = {v: k for k, v in ROLES.items()}
@@ -107,15 +108,15 @@ def init() -> None:
 
 
 def login_gate() -> None:
-    st.markdown("<style>[data-testid=\"stSidebar\"], [data-testid=\"stSidebarCollapsedControl\"] {display: none;}</style>",
-                unsafe_allow_html=True)       # signed out: no page list in the sidebar
-    _, mid, _ = st.columns([1, 2, 1])
-    with mid:
-        st.markdown("## :orange[FAST]")
-        st.caption("Floor Assistant for Supervisors and Technicians - prototype, synthetic data")
+    landing.inject_css()                  # signed out: no sidebar page list, landing-page styles
+    st.markdown(landing.banner(), unsafe_allow_html=True)
+    left, right = st.columns([2.1, 1], gap="medium")
+    left.markdown(landing.HERO, unsafe_allow_html=True)
+    with right.container(border=True):
         t_in, t_req = st.tabs(["Sign in", "Request access"])
         with t_in:
-            with st.form("login_form"):
+            st.caption("Your role decides which pages you see.")
+            with st.form("login_form", border=False):
                 name = st.text_input("Username")
                 pw = st.text_input("Password", type="password")
                 go = st.form_submit_button("Sign in", type="primary", width="stretch")
@@ -128,7 +129,7 @@ def login_gate() -> None:
             st.caption(f"First run on this computer? The demo account passwords are in `{db_path().parent / 'initial_credentials.txt'}`.")
         with t_req:
             st.caption("An administrator must approve your request before you can sign in.")
-            with st.form("request_form"):
+            with st.form("request_form", border=False):
                 a, b = st.columns(2)
                 uname = a.text_input("Choose a username", help="3-31 characters: a-z, 0-9, dot, dash, underscore")
                 dname = b.text_input("Your name")
@@ -146,6 +147,7 @@ def login_gate() -> None:
                         st.success("Request sent. You can sign in once an administrator approves it.")
                     except ValueError as exc:
                         st.error(str(exc))
+    st.markdown(landing.below_fold(), unsafe_allow_html=True)
 
 
 def sidebar_identity() -> None:
