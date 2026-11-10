@@ -113,4 +113,4 @@ tests/test_workflow_admin.py::test_health PASSED                         [ 98%]
 tests/test_workflow_admin.py::test_llm_bad_output_falls_back PASSED      [ 99%]
 tests/test_workflow_admin.py::test_ungrounded_citation_is_dropped PASSED [100%]
 
-============================= 107 passed in 8.94s =============================
+============================= 107 passed in 8.66s =============================

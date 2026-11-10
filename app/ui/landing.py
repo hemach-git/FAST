@@ -1,63 +1,58 @@
-"""Signed-out landing page content (static HTML) for FAST: banner, hero, safeguards, how it answers, modules.
+"""Signed-out landing page content (static HTML) for FAST: compact one-page layout.
 
-All text here is fixed marketing-style copy about what the application does; nothing user-supplied is rendered.
-HTML is built without blank lines or indentation so Markdown does not turn it into code blocks.
+Banner, hero with four safeguards, "how FAST answers" row, and one card per module. All text is fixed copy about
+what the application does; nothing user-supplied is rendered. HTML is built without blank lines or indentation so
+Markdown does not turn it into code blocks.
 """
 from __future__ import annotations
 
-NAVY = "#1E293B"
-ORANGE = "#E8590C"
-
 CSS = """<style>
-[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"] {display: none;}
-.block-container {max-width: 1240px; padding-top: 3.2rem;}
-.fa-strip {background:#FFE9A8; color:#3B2F00; text-align:center; font-size:.82rem; font-weight:600; padding:6px 10px; border-radius:6px 6px 0 0;}
-.fa-bar {background:#1E293B; text-align:center; padding:14px 10px 12px; border-bottom:3px solid #E8590C; margin-bottom:14px; border-radius:0 0 6px 6px;}
-.fa-bar .t {color:#fff; font-size:1.9rem; font-weight:800; letter-spacing:.42em; padding-left:.42em;}
-.fa-bar .s {color:#F5B781; font-size:.72rem; font-weight:700; letter-spacing:.2em; text-transform:uppercase;}
-.fa-hero {background:#fff; border:1px solid #D5DBE3; border-radius:8px; padding:22px 26px; min-height:330px;}
-.fa-eyebrow {color:#64748B; font-size:.74rem; letter-spacing:.08em; text-transform:uppercase;}
-.fa-hero h1 {color:#1E3A5F; font-size:1.85rem; line-height:1.2; margin:.3rem 0 .6rem; padding:0;}
-.fa-hero p {color:#334155; font-size:1.0rem; line-height:1.5; margin:0 0 .8rem;}
-.fa-label {color:#475569; font-size:.72rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin:.5rem 0 .3rem;}
-.fa-guards {display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;}
-.fa-guard {border-left:3px solid #2E7D32; padding-left:10px;}
-.fa-guard b {display:block; color:#1E3A5F; font-size:.92rem; margin-bottom:2px;}
-.fa-guard span {display:block; color:#475569; font-size:.8rem; line-height:1.35;}
-.fa-h {color:#1E3A5F; font-size:1.2rem; font-weight:700; margin:20px 0 8px;}
-.fa-h small {color:#64748B; font-size:.82rem; font-weight:400; margin-left:8px;}
-.fa-grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:10px;}
-.fa-card {background:#fff; border:1px solid #D5DBE3; border-radius:8px; padding:12px 14px; display:flex; flex-direction:column; min-height:112px;}
-.fa-card b {color:#1E3A5F; font-size:.95rem; margin-bottom:4px;}
-.fa-card span {display:block; color:#475569; font-size:.82rem; line-height:1.4; flex:1;}
-.fa-card em {color:#64748B; font-size:.74rem; font-style:normal; margin-top:8px;}
-.fa-grid5 {display:grid; grid-template-columns:repeat(auto-fit,minmax(168px,1fr)); gap:10px;}
+[data-testid="stSidebar"], [data-testid="stSidebarCollapsedControl"], [data-testid="stExpandSidebarButton"],
+header[data-testid="stHeader"] {display: none;}
+.block-container {max-width: 1320px; padding: 0.7rem 1.2rem 0.4rem;}
+div[data-testid="stVerticalBlock"] {gap: 0.5rem;}
+.fa-bar {background:#1E293B; display:flex; align-items:center; justify-content:space-between; gap:14px; padding:8px 18px;
+         border-bottom:3px solid #E8590C; border-radius:6px; margin-bottom:.5rem;}
+.fa-bar .t {color:#fff; font-size:1.45rem; font-weight:800; letter-spacing:.34em; white-space:nowrap;}
+.fa-bar .s {color:#F5B781; font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; text-align:center; flex:1;}
+.fa-bar .b {background:#FFE9A8; color:#3B2F00; font-size:.72rem; font-weight:700; padding:4px 10px; border-radius:5px; white-space:nowrap;}
+.fa-hero {background:#fff; border:1px solid #D5DBE3; border-radius:8px; padding:18px 24px; min-height:340px;}
+.fa-eyebrow {color:#64748B; font-size:.76rem; letter-spacing:.08em; text-transform:uppercase;}
+.fa-hero h1 {color:#1E3A5F; font-size:1.8rem; line-height:1.2; margin:.25rem 0 .55rem; padding:0;}
+.fa-hero p {color:#334155; font-size:1.02rem; line-height:1.5; margin:0 0 .9rem;}
+.fa-label {color:#475569; font-size:.74rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; margin:.2rem 0 .25rem;}
+.fa-guards {display:grid; grid-template-columns:repeat(auto-fit,minmax(135px,1fr)); gap:10px;}
+.fa-guard {border-left:3px solid #2E7D32; padding-left:9px;}
+.fa-guard b {display:block; color:#1E3A5F; font-size:.95rem; margin-bottom:2px;}
+.fa-guard span {display:block; color:#475569; font-size:.85rem; line-height:1.38;}
+.fa-h {color:#1E3A5F; font-size:1.02rem; font-weight:700; margin:6px 0 5px;}
+.fa-h small {color:#64748B; font-size:.76rem; font-weight:400; margin-left:8px;}
+.fa-grid {display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px;}
+.fa-card {background:#fff; border:1px solid #D5DBE3; border-radius:7px; padding:8px 11px; display:flex; flex-direction:column;}
+.fa-card b {color:#1E3A5F; font-size:.86rem; margin-bottom:2px;}
+.fa-card span {display:block; color:#475569; font-size:.77rem; line-height:1.32; flex:1;}
+.fa-card em {color:#64748B; font-size:.7rem; font-style:normal; margin-top:5px;}
 .fa-ai {border-top:3px solid #E8590C;}
 .fa-code {border-top:3px solid #1E3A5F;}
-.fa-foot {text-align:center; color:#64748B; font-size:.8rem; padding:14px 0 4px;}
+.fa-foot {text-align:center; color:#64748B; font-size:.74rem; padding:4px 0 0;}
 </style>"""
 
-BANNER = ('<div class="fa-strip">SYNTHETIC DATA · Prototype · No real plant records, people or equipment</div>'
-          '<div class="fa-bar"><div class="t">FAST</div>'
-          '<div class="s">Floor Assistant for Supervisors and Technicians</div></div>')
+BANNER = ('<div class="fa-bar"><div class="t">FAST</div>'
+          '<div class="s">Floor Assistant for Supervisors and Technicians</div>'
+          '<div class="b">SYNTHETIC DATA · no real plant records</div></div>')
 
 HERO = (
     '<div class="fa-hero">'
-    '<div class="fa-eyebrow">Safety · maintenance · quality documents, in one place</div>'
+    '<div class="fa-eyebrow">Safety · maintenance · quality documents in one place</div>'
     '<h1>The right answer from the right manual. People stay in charge.</h1>'
-    '<p>FAST reads a floor question in plain words, sends it to the Safety, Maintenance or Quality documents, '
-    'checks each source and answers with numbered steps and a citation for every claim. '
-    'Nothing becomes official until a manager approves it.</p>'
+    '<p>FAST reads a floor question in plain words, checks the Safety, Maintenance and Quality documents and answers '
+    'with numbered steps and a source for every claim. Nothing becomes official until a manager approves it.</p>'
     '<div class="fa-label">Safeguards</div>'
     '<div class="fa-guards">'
-    '<div class="fa-guard"><b>Safety first</b><span>A hazard always brings in the safety procedure. '
-    'A model mistake cannot drop it.</span></div>'
-    '<div class="fa-guard"><b>Sources you can check</b><span>Every claim points to a real section. '
-    'Not in the documents? It says "not found".</span></div>'
-    '<div class="fa-guard"><b>People decide</b><span>The AI only reads documents. A manager approves, '
-    'advises or rejects every change.</span></div>'
-    '<div class="fa-guard"><b>Access checked</b><span>Sign-in, roles and administrator approval. '
-    'Every decision is recorded.</span></div>'
+    '<div class="fa-guard"><b>Safety first</b><span>A hazard always brings in the safety procedure.</span></div>'
+    '<div class="fa-guard"><b>Sources you can check</b><span>Every claim cites a real section, or it says "not found".</span></div>'
+    '<div class="fa-guard"><b>People decide</b><span>The AI only reads. Managers approve every change.</span></div>'
+    '<div class="fa-guard"><b>Access checked</b><span>Sign-in, roles and approval, all recorded.</span></div>'
     '</div></div>')
 
 
@@ -67,41 +62,29 @@ def _card(title: str, body: str, foot: str = "", kind: str = "") -> str:
 
 
 HOW = (
-    '<div class="fa-h">How FAST answers a question<small>Three AI agents read and write; plain code enforces safety, '
-    'sources and approvals.</small></div><div class="fa-grid5">'
-    + _card("1. Understands the question", "A router agent works out what you mean, which manuals to check, the "
-            "equipment and whether it is a hazard. It asks a follow-up when the question is unclear.", "AI agent", "fa-ai")
-    + _card("2. Searches three manuals at once", "Safety, Maintenance and Quality specialist agents each search only "
-            "their own approved manuals, using read-only tools.", "AI agents", "fa-ai")
-    + _card("3. Writes a cited answer", "A synthesizer agent merges the findings into numbered steps, safety first, "
-            "with the source of each step.", "AI agent", "fa-ai")
-    + _card("4. Checks every claim", "Code, not AI: the hazard override, a check that every citation is a real "
-            "retrieved section, and a safe fallback if the AI is unavailable.", "Plain code", "fa-code")
-    + _card("5. Records everything", "Every step, with its input, output, tokens and cost, is stored for review. "
-            "Every access and approval decision is audited.", "Plain code", "fa-code")
+    '<div class="fa-h">How FAST answers<small>Three AI agents read and write; plain code enforces safety, sources and '
+    'approvals.</small></div><div class="fa-grid">'
+    + _card("1. Understands", "A router agent finds the topic, equipment and hazard, or asks a follow-up.", "AI agent", "fa-ai")
+    + _card("2. Searches", "Safety, Maintenance and Quality agents search their own manuals, read-only.", "AI agents", "fa-ai")
+    + _card("3. Answers", "A writer agent gives numbered steps, safety first, with sources.", "AI agent", "fa-ai")
+    + _card("4. Checks", "Hazard override, every citation verified, safe fallback if the AI is down.", "Plain code", "fa-code")
+    + _card("5. Records", "Every step, cost and decision is stored for review and audit.", "Plain code", "fa-code")
     + '</div>')
 
 MODULES = [
-    ("Ask", "Type a floor question or pick an example. Get numbered steps, safety notes and the sources, "
-            "and flag a wrong answer.", "Supervisor · Manager · Administrator"),
-    ("Documents", "Browse approved procedures. Managers submit updates and approve, advise changes on or reject "
-                  "drafts, with a diff and review history.", "Everyone views · Manager · Administrator approve"),
-    ("Review queue", "Answers that supervisors flagged as wrong. Confirm real issues or dismiss them, with an "
-                     "audit trail.", "Manager · Administrator"),
-    ("Analytics", "Questions asked, top recurring floor issues, documentation gaps and a daily trend, with "
-                  "CSV export.", "Manager · Administrator"),
-    ("Diagnostics", "System health, configuration snapshot, recent requests and the latest evaluation results.",
-     "Manager · Administrator"),
-    ("Traces & logs", "Follow any answer step by step: timeline, each agent's input and output, cost, and drill-down "
-                      "metrics.", "Administrator"),
-    ("Users & access", "Approve or deny access requests, set roles, disable accounts and reset passwords.",
-     "Administrator"),
+    ("Ask", "Ask in plain words. Get steps, safety notes and sources.", "Everyone"),
+    ("Documents", "Browse approved documents. Approve, advise or reject drafts.", "Managers approve"),
+    ("Review queue", "Confirm or dismiss answers flagged as wrong.", "Manager · Admin"),
+    ("Analytics", "Recurring issues, documentation gaps, trends, CSV.", "Manager · Admin"),
+    ("Diagnostics", "Health, configuration and evaluation results.", "Manager · Admin"),
+    ("Traces & logs", "Follow any answer step by step, with cost and drill-down.", "Admin"),
+    ("Users & access", "Approve access, set roles, reset passwords.", "Admin"),
 ]
 
-MODS = ('<div class="fa-h">Every module in the application<small>Each person sees only the pages their role '
+MODS = ('<div class="fa-h">Every page in the application<small>Each person sees only the pages their role '
         'allows.</small></div><div class="fa-grid">' + "".join(_card(t, b, r) for t, b, r in MODULES) + '</div>')
 
-FOOT = '<div class="fa-foot">FAST · Synthetic data · No real plant records</div>'
+FOOT = '<div class="fa-foot">FAST · Synthetic data · No real plant records, people or equipment</div>'
 
 
 def inject_css() -> None:

@@ -115,7 +115,6 @@ def login_gate() -> None:
     with right.container(border=True):
         t_in, t_req = st.tabs(["Sign in", "Request access"])
         with t_in:
-            st.caption("Your role decides which pages you see.")
             with st.form("login_form", border=False):
                 name = st.text_input("Username")
                 pw = st.text_input("Password", type="password")
@@ -126,7 +125,7 @@ def login_gate() -> None:
                     st.rerun()
                 except users.AccessError as exc:
                     st.error(str(exc))
-            st.caption(f"First run on this computer? The demo account passwords are in `{db_path().parent / 'initial_credentials.txt'}`.")
+            st.caption(f"First run? Demo passwords: `{db_path().parent / 'initial_credentials.txt'}`")
         with t_req:
             st.caption("An administrator must approve your request before you can sign in.")
             with st.form("request_form", border=False):
