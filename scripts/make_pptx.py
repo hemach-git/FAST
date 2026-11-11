@@ -130,8 +130,8 @@ def main() -> None:
     text(s, 4.48, 1.3, 8.4, 0.4, [("How it works", H, ORANGE, True)])
     steps = [("1  Ask", "A supervisor types a question in plain words, like \"Conveyor C3 is jammed\".", NAVY),
              ("2  Understand", "One AI helper works out the question and which manuals to check.", BLUE),
-             ("3  Search", "Three AI helpers search the Safety, Maintenance and Quality manuals at the same time.", GREEN),
-             ("4  Answer", "One AI helper writes numbered steps, with the source for each one.", RED)]
+             ("3  Search", "Three AI helpers search their own manuals at once, by meaning and keywords.", GREEN),
+             ("4  Answer", "One AI helper writes numbered steps with sources; a checker drops steps the manuals don't support.", RED)]
     for i, (head, body, col) in enumerate(steps):
         x = 4.48 + i * 2.11
         box(s, x, 1.7, 1.99, 1.62, fill=WHITE, line=col)
@@ -144,17 +144,19 @@ def main() -> None:
         ("Why you can trust it", H, ORANGE, True),
         ("Safety rules are plain computer code, not AI:", 12, NAVY, True),
         "• A hazard always brings in the safety procedure.",
-        "• Every claim must point to a real section.",
+        "• Every claim must point to a real section; a second AI check removes unsupported steps.",
         "• Not in the approved documents? It says \"not found\".",
         "• AI helpers can read documents, never change them.",
-        "• Only a manager can approve a document change.",
+        "• Only a manager can approve a document change; overdue document reviews are flagged.",
         "• Every action is recorded."], after=2)
 
     box(s, 4.48, y2, 5.15, h2, fill=LIGHT)
     text(s, 4.65, y2 + 0.08, 4.85, h2 - 0.1, [
         ("What we tested (honest numbers)", H, ORANGE, True),
         ("Basic rule-based version, test setup (no live AI)", 12.5, NAVY, True),
-        [(f"{res['passed']}/{res['total']}", 20, NAVY, True), ("  test questions   ", 12, GREY, False),
+        [(f"{res['passed']}/{res['total']}", 20, NAVY, True),
+         (f"  questions ({len(res['known_gap_xfail'])} known gaps)   " if res.get("known_gap_xfail")
+          else "  test questions   ", 12, GREY, False),
          (tests, 20, NAVY, True), ("  automated tests", 12, GREY, False)],
         ("This proves the parts work together, not the quality of the AI.", 12, GREY, False),
     ] + live_lines(), after=2)
@@ -174,7 +176,7 @@ def main() -> None:
     box(s, 0.45, 6.55, 12.44, 0.5, fill=NAVY)
     text(s, 0.62, 6.6, 12.1, 0.42, [[("What is next:  ", 14, ORANGE, True),
                                      ("real documents from one plant line  ·  company single sign-on  ·  faster answers  ·  "
-                                      "a second AI check on answers", 14, WHITE, False)]])
+                                      "confirm the speed goal and review intervals", 14, WHITE, False)]])
     # Fine print
     text(s, 0.45, 7.08, 12.44, 0.36, [(
         "Uses OpenAI gpt-4o-mini. Runs on a local computer. If the AI is unavailable, it falls back to a simple rule-based mode. "

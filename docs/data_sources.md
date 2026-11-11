@@ -19,7 +19,7 @@ Equipment names (Press Line 2, CNC-04, Conveyor C3, …), people, extensions (ex
 | Role | Model | Status |
 |---|---|---|
 | Fallback pipeline and tests | `mock-extractive-v1` (deterministic, no AI) | Built, used by tests and evals today |
-| Router, specialists, synthesizer, critic agents | `gpt-4o-mini` via the OpenAI API (set in `config.yaml`, key in `.env`) | **Built.** Live eval 63/67 on 67 synthetic cases |
+| Router, specialists, synthesizer, critic agents | `gpt-4o-mini` via the OpenAI API (set in `config.yaml`, key in `.env`) | **Built.** Live eval 64/67 on 67 synthetic cases |
 | Embeddings for hybrid search | `BAAI/bge-small-en-v1.5`, run locally with sentence-transformers (downloaded from Hugging Face on first use; vectors cached next to the DB) | **Built.** Default retrieval mode |
 | Alternative provider | Anthropic Claude: v1 classifier and answer path only. **The agent chat adapter is not implemented**; adding it is a small change to `llm.chat` | Not validated |
 

@@ -192,7 +192,12 @@ def _answer(question: str, emergency: bool, trace: list[AgentStep]) -> Orchestra
 
     # 5. Faithfulness critic (agent labels each claim; CODE removes unsupported steps or abstains)
     flags: list[str] = []
-    if acfg.get("critic", {}).get("enabled") and not ans.abstain and ans.citation_ids:
+    ccfg = acfg.get("critic", {})
+    why_not = critic.skip_reason(ans, hazard or emergency, ccfg)
+    if ccfg.get("enabled") and not ans.abstain and ans.citation_ids and why_not:
+        trace.append(AgentStep(agent="orchestrator", kind="guard", name="faithfulness_check", status="skipped",
+                               summary=why_not))
+    elif ccfg.get("enabled") and not ans.abstain and ans.citation_ids:
         report, st = critic.review(question, ans, hits)
         trace += st
         _check_budget(trace, acfg["token_budget"])

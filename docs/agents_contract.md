@@ -55,6 +55,7 @@ class Verdict(BaseModel): id: str; verdict: "supported"|"partial"|"unsupported";
 class CriticReport(BaseModel): verdicts: list[Verdict]          # ids: A1 = answer, S1..Sn = steps, N1..Nn = safety notes
 def review(question, answer, hits) -> tuple[CriticReport, list[AgentStep]]   # one LLM call, judges claims against evidence TEXT
 def apply(answer, report, hits) -> CriticOutcome                             # plain-code policy (rule 8)
+def skip_reason(answer, hazard, cfg) -> str                                 # '' = run; run_on: selective skips short non-hazard answers
 
 # orchestrator.py
 def answer(question: str, emergency: bool = False) -> OrchestratorResult   # decision, answer, hits, trace, tokens, equipment, clarify, flags
@@ -69,7 +70,7 @@ def answer(question: str, emergency: bool = False) -> OrchestratorResult   # dec
 5. Any `AgentError`, timeout (25 s) or token-budget breach → fall back to the rule-based pipeline and set `used_fallback=True`.
 6. `agents.mode: pipeline` skips agents entirely (the v1 behaviour).
 7. `RouterPlan.clarify` set and confidence low → return `status="abstained"` with the clarifying question in `abstain_reason` (the UI shows it).
-8. Faithfulness check (critic labels, code decides): an unsupported step is removed (`unsupported_step_removed`). A safety note is **never** removed, only flagged (`unsupported_safety_note_kept`). If the summary (A1) is unsupported, or more than `max_unsupported_ratio` (0.34) of claims are, the answer abstains (`unfaithful_answer`). A missing verdict counts as "unchecked" and the claim is kept. `support_ids` that were retrieved are added to the citations (`critic_citation_added`). Any unsupported claim lowers confidence from high to medium. The outcome is logged as a `faithfulness_check` guard step. A critic error falls back the same way as rule 5.
+8. Faithfulness check (critic labels, code decides): an unsupported step is removed (`unsupported_step_removed`). A safety note is **never** removed, only flagged (`unsupported_safety_note_kept`). If the summary (A1) is unsupported, or more than `max_unsupported_ratio` (0.34) of claims are, the answer abstains (`unfaithful_answer`). A missing verdict counts as "unchecked" and the claim is kept. `support_ids` that were retrieved are added to the citations (`critic_citation_added`). Any unsupported claim lowers confidence from high to medium. The outcome is logged as a `faithfulness_check` guard step. A critic error falls back the same way as rule 5. With `run_on: selective` (default) the critic runs only for hazard or emergency answers and answers with `min_steps` (5) or more steps; a skipped check is logged as a `faithfulness_check` guard step with status `skipped`. The critic returns verdicts without written reasons (latency).
 
 ## Response additions (`AskResponse`, already in `schemas.py`)
 

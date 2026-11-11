@@ -115,11 +115,53 @@ def test_critic_skipped_when_synthesizer_abstains(fake):
 def test_critic_tokens_count_toward_budget(fake, monkeypatch):
     # router 140 + specialist 140+ + synthesizer 140 = ~420 before the critic; critic pushes it over 500
     monkeypatch.setitem(get_config()["agents"], "token_budget", 500)
+    monkeypatch.setitem(get_config()["agents"]["critic"], "run_on", "all")
     fake.plan = {"categories": ["maintenance"], "confidence": 0.9, "hazard": False, "equipment": None,
                  "queries": {"maintenance": "coolant concentration"}, "clarify": None, "reason": "t"}
     r = workflow.ask(COOLANT)
     assert r.used_fallback and fake.calls_for("critic")
     assert "token budget exceeded" in next(s.summary for s in r.agent_trace if s.name == "fallback_to_pipeline")
+
+
+# ---------------------------------------------------------------- selective mode (latency)
+NO_HAZARD = {"categories": ["maintenance"], "confidence": 0.9, "hazard": False, "equipment": None,
+             "queries": {"maintenance": "coolant concentration"}, "clarify": None, "reason": "t"}
+
+
+def test_selective_skips_a_short_non_hazard_answer(fake, monkeypatch):
+    monkeypatch.setitem(get_config()["agents"]["critic"], "run_on", "selective")
+    fake.plan = NO_HAZARD
+    r = workflow.ask(COOLANT)
+    g = guard(r)
+    assert r.status == "ok" and not fake.calls_for("critic")
+    assert g and g.status == "skipped" and "not a hazard task" in g.summary
+
+
+def test_selective_checks_a_hazard_answer(fake, monkeypatch):
+    monkeypatch.setitem(get_config()["agents"]["critic"], "run_on", "selective")
+    r = workflow.ask(JAM)                                   # fake router flags the jam as a hazard
+    assert fake.calls_for("critic") and guard(r).status == "ok"
+
+
+def test_selective_checks_a_long_answer(fake, monkeypatch):
+    monkeypatch.setitem(get_config()["agents"]["critic"], "run_on", "selective")
+    fake.plan = NO_HAZARD
+    fake.synth_answer = {"answer": "Set the coolant.", "steps": [f"step {i}" for i in range(1, 6)],
+                         "safety_notes": [], "confidence": "high", "abstain": False}
+    workflow.ask(COOLANT)
+    assert fake.calls_for("critic"), "5 steps >= min_steps: invented steps would do the most harm here"
+
+
+@pytest.mark.parametrize("run_on, hazard, steps, runs", [
+    ("all", False, 1, True), ("selective", True, 1, True), ("selective", False, 4, False), ("selective", False, 5, True)])
+def test_skip_reason_policy(run_on, hazard, steps, runs):
+    ans = LLMAnswer(answer="a", steps=[f"s{i}" for i in range(steps)], citation_ids=["x"])
+    assert (critic.skip_reason(ans, hazard, {"run_on": run_on, "min_steps": 5}) == "") is runs
+
+
+def test_critic_prompt_asks_for_no_reasons():
+    from app.agents import prompts
+    assert "Do not write reasons" in prompts.CRITIC_SYSTEM and '"reason"' not in prompts.CRITIC_SYSTEM
 
 
 # ---------------------------------------------------------------- policy unit tests (pure code)

@@ -62,7 +62,7 @@ equipment:
 # ---- v2 multi-agent layer (active only when llm.provider != mock) ----
 agents:
   mode: multi_agent         # multi_agent | pipeline (rule-based fallback)
-  prompt_version: "v2.0"
+  prompt_version: "v2.1"   # v2.1: router domain hints, critic without reasons
   timeout_s: 25
   token_budget: 16000       # total tokens (in+out) per question across all agents (12000 before the critic)
   min_clarify_confidence: 0.5
@@ -70,7 +70,10 @@ agents:
   specialist:  { model: gpt-4o-mini, max_tokens: 700, max_steps: 3 }
   synthesizer: { model: gpt-4o-mini, max_tokens: 900 }
   # Faithfulness critic: labels each claim against the evidence; code removes unsupported steps or abstains.
-  critic:      { enabled: true, model: gpt-4o-mini, max_tokens: 700, max_unsupported_ratio: 0.34 }
+  # run_on: selective = only hazard/emergency answers or answers with >= min_steps steps (all = every answer).
+  # Selective since 2026-11-10: checking every answer added ~5 s and pushed live p95 to ~25 s.
+  critic:      { enabled: true, run_on: selective, min_steps: 5, model: gpt-4o-mini, max_tokens: 700,
+                 max_unsupported_ratio: 0.34 }
 
 # ---- document freshness (services/freshness.py) ----
 freshness:

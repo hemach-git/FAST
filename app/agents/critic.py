@@ -46,6 +46,17 @@ def claims_of(ans: LLMAnswer) -> dict[str, str]:
     return {k: v for k, v in items.items() if v and v.strip()}
 
 
+def skip_reason(ans: LLMAnswer, hazard: bool, ccfg: dict) -> str:
+    """'' = run the critic. Selective mode (latency): only hazard / emergency answers or long step lists,
+    where an invented step does the most harm. run_on: all checks every answer."""
+    if ccfg.get("run_on", "all") != "selective" or hazard:
+        return ""
+    min_steps = int(ccfg.get("min_steps", 5))
+    if len(ans.steps) >= min_steps:
+        return ""
+    return f"skipped: not a hazard task and {len(ans.steps)} step(s) < {min_steps} (critic.run_on: selective)"
+
+
 def review(question: str, ans: LLMAnswer, hits: list[dict]) -> tuple[CriticReport, list[AgentStep]]:
     """One LLM call. Evidence = every section the synthesizer saw (cited ones first)."""
     cfg = get_config()

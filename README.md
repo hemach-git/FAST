@@ -12,15 +12,15 @@ Floor supervisors ask a plain-English question. A small team of **AI agents** ro
 
 | Part | Status |
 |---|---|
-| Rule-based pipeline, guardrails, document approvals, audit, analytics, feedback queue | **Built and tested** (173 automated tests; rule-based eval gate in CI on the 54 golden cases that apply to it) |
-| **LLM agents:** router, Safety / Maintenance / Quality specialists, synthesizer, faithfulness critic (OpenAI `gpt-4o-mini`) | **Built**, tested offline with a scripted fake LLM and formally evaluated live on 67 golden cases: **63/67 passed (94.0%)** (see Evaluation results) |
+| Rule-based pipeline, guardrails, document approvals, audit, analytics, feedback queue | **Built and tested** (181 automated tests; rule-based eval gate in CI on the 54 golden cases that apply to it) |
+| **LLM agents:** router, Safety / Maintenance / Quality specialists, synthesizer, faithfulness critic (OpenAI `gpt-4o-mini`) | **Built**, tested offline with a scripted fake LLM and formally evaluated live on 67 golden cases: **64/67 passed (95.5%)** (see Evaluation results) |
 | **Hybrid search:** BM25 keywords + local `bge-small` embeddings, merged with RRF | **Built, on by default.** Retrieval eval (35 cases): top-1 hit 88.6% (BM25) → 100%. A cross-encoder reranker is built but off (it misranked emergency questions) |
 | Streamlit UI | **Built**: Ask, Documents, Review queue, Analytics, Diagnostics, plus the administrator pages *Traces & logs* and *Users & access*. Every page is smoke-tested for every role |
 | Administrator tools | **Built**: stored traces for every agent step, trace view with drill-down metrics, document approve / advise / reject with diff and history, user access management with sign-in |
 | **Document review dates** | **Built**: every published document has a review-due date (per-category interval in `config.yaml` -> `freshness`, an assumption to confirm). Answers that cite an overdue document are kept but warned; managers confirm a document is still current on *Documents → Review dates* |
 | Manager insights agent, offline LLM judge | Not built in this prototype |
 
-**Two kinds of numbers, never mixed:** the rule-based result (49/54, the 5 misses are documented known gaps) checks the plumbing on a mock model (no AI). The live result (63/67) is the real `gpt-4o-mini` agents on synthetic data.
+**Two kinds of numbers, never mixed:** the rule-based result (49/54, the 5 misses are documented known gaps) checks the plumbing on a mock model (no AI). The live result (64/67) is the real `gpt-4o-mini` agents on synthetic data.
 
 **Next:** real documents from one plant line, company SSO, faster answers (the critic adds ~5 s), confirm the review intervals with EHS and Quality.
 
@@ -115,11 +115,34 @@ More detail:
 | Draft-document leaks | 0 | 0 |
 | p95 latency (pipeline, mock, hybrid search) | ~24 ms | < 1 s rule-based (assumption to confirm) |
 
-Case types (67): 30 positive, 5 multi-route (maintenance + safety), 5 negative, 8 edge (injection, emergency, draft leak, PII, bad input), 10 paraphrase, 5 hazard, 4 near-miss. Every seeded document has at least one case. Tests: **173/173 pass**.
+Case types (67): 30 positive, 5 multi-route (maintenance + safety), 5 negative, 8 edge (injection, emergency, draft leak, PII, bad input), 10 paraphrase, 5 hazard, 4 near-miss. Every seeded document has at least one case. Tests: **181/181 pass**.
 
 > ⚠️ **With the mock provider, the pass rate checks the pipeline wiring**, not AI quality. The mock is extractive and was written alongside the golden set.
 
-**v2.1 agents (live `gpt-4o-mini`, hybrid search + faithfulness critic), 2026-11-10: 63/67 passed (94.0%).** Result file: `evals/results/latest_multi_agent.json` (`python -m evals.run --mode multi_agent`).
+**v2.3 agents (live `gpt-4o-mini`, hybrid search, critic on hazard and long answers only), 2026-11-11: 64/67 passed (95.5%).** Result file: `evals/results/latest_multi_agent.json`.
+
+| Metric | Live result | Target |
+|---|---|---|
+| Routing accuracy | 97.7% | ≥ 90% |
+| Correct document cited | 96.2% | ≥ 85% |
+| Abstain correctness | 100% (incl. 4/4 near-miss) | 100% |
+| Safety-inclusion recall (hazard tasks) | 100% | 100% |
+| Paraphrased questions | 100% (10 of 10) | ≥ 80% |
+| Draft-document leaks | 0 | 0 |
+| Latency p50 / p95 | 6.2 s / 14.9 s (was 7.6 s / 25.1 s with the critic on every answer) | p95 < 8 s: **not met** |
+| Critic | ran on 30 answers, skipped 23; ~3.2 s per check without written reasons (was ~5 s) | |
+| LLM calls and tokens per question | ~3.5 calls, ~2,440 tokens | |
+| Estimated cost | ~$0.04 for the whole run | |
+| Fell back to rule-based mode | 1 case (H02) | |
+
+**What changed:** the critic now runs only for hazard or emergency answers and answers with 5 or more steps (`agents.critic.run_on: selective`) and no longer writes a reason per claim; the router prompt has domain examples (machine settings → Maintenance, rules for people and vehicles → Safety, part limits → Quality); H02 now expects an abstain because no document describes replacing a roller.
+
+**The 3 failures** (the small model varies run to run; the first run with these changes failed P02, P15, H02 and G02 instead):
+- **H02** "swap a seized roller": an agent step failed and the rule-based fallback answered instead of abstaining.
+- **G09** gauge failed calibration: cited the nonconforming-parts procedure but not the gauge procedure (QC-DIM-02).
+- **G18** weld helmet shade: routed to Quality again, then abstained (passed in the run before).
+
+**v2.1 agents (critic on every answer), 2026-11-10: 63/67 passed (94.0%).** Kept for history:
 
 | Metric | Live result | Target |
 |---|---|---|
@@ -182,8 +205,8 @@ The checks are routing, citation and keyword rules, not an AI judge, and the set
 ## Assumptions and limitations
 
 - Sign-in is a **local prototype** (salted password hashes, lockout, administrator approval). It is not company SSO and has no multi-factor step or email password reset.
-- Live quality was measured on 67 **synthetic** cases (63/67); it is not a guarantee for real documents. A small model can vary between runs, and the checks are citation and keyword based (no AI judge), so a wrong sentence that cites a real section could still pass.
-- Live latency misses the 8 s goal (an assumption to confirm, set in `config.yaml` -> `targets.p95_latency_ms_agent`; it was proposed in the v2 design, not set by a client): latest run p50 7.6 s, p95 25.1 s with the critic on; before the critic p50 5.8 s, p95 8.7–10.9 s (the live API varies).
+- Live quality was measured on 67 **synthetic** cases (64/67); it is not a guarantee for real documents. A small model can vary between runs, and the checks are citation and keyword based (no AI judge), so a wrong sentence that cites a real section could still pass.
+- Live latency misses the 8 s goal (an assumption to confirm, set in `config.yaml` -> `targets.p95_latency_ms_agent`; it was proposed in the v2 design, not set by a client): latest run p50 6.2 s, p95 14.9 s with the critic on hazard and long answers only (25.1 s when it checked every answer); before the critic p50 5.8 s, p95 8.7–10.9 s (the live API varies).
 - Agent mode makes several LLM calls per question, so latency is higher than the rule-based pipeline.
 - Hybrid search (BM25 + local `bge-small` embeddings) plus agent query rewriting, tested on ~70 sections only. The embedding model downloads on first use; without it, search falls back to a simple hash embedder.
 - Review intervals are illustrative, not a client or regulatory policy. The seeded demo makes SOP-FLT-06 and MM-PM-06 overdue and QC-SPC-04 due soon; an existing `data/fast.db` gets the new column but keeps all documents current (reseed with `python -m app.data.seed_synthetic --reset`).

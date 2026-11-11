@@ -1,8 +1,8 @@
 # FAST: Design v2 (AI-powered, supervised multi-agent)
 
 > **Status (2026-11-10).**
-> - **v1 (built, tested):** rule-based pipeline with a mock LLM. 173 automated tests; rule-based eval gate in CI (49/54 applicable cases, 5 documented known gaps), which checks the wiring only.
-> - **v2 (built):** LLM agents for routing, research and answer writing, plus the Streamlit UI. **Latest live eval (hybrid search + faithfulness critic): 63/67** on 67 synthetic cases (routing 95.5%, correct document cited 94.3%, abstain 100%, safety included 81.8%); p95 latency 25.1 s misses the 8 s goal. Earlier run (BM25 only, no critic, 45 cases): 44/45, p95 8.7-10.9 s.
+> - **v1 (built, tested):** rule-based pipeline with a mock LLM. 181 automated tests; rule-based eval gate in CI (49/54 applicable cases, 5 documented known gaps), which checks the wiring only.
+> - **v2 (built):** LLM agents for routing, research and answer writing, plus the Streamlit UI. **Latest live eval (hybrid search, critic on hazard and long answers): 64/67** on 67 synthetic cases (routing 97.7%, correct document cited 96.2%, abstain 100%, safety included 100%); p95 latency 14.9 s misses the 8 s goal (25.1 s when the critic checked every answer). Earlier run (BM25 only, no critic, 45 cases): 44/45, p95 8.7-10.9 s.
 > - **Provider:** OpenAI `gpt-4o-mini` is the first target. The interface is provider-agnostic, so Claude plugs in the same way.
 
 Diagrams: [architecture.md](architecture.md) and [data_model.md](data_model.md). Agent interfaces: [agents_contract.md](agents_contract.md).
@@ -19,7 +19,7 @@ Diagrams: [architecture.md](architecture.md) and [data_model.md](data_model.md).
 - **R7.** Supervisors flag wrong answers; managers review them.
 - **R8.** Ambiguous question: ask one clarifying question, or search broadly and say so.
 - **R9 (stretch).** Manager insights: cluster unanswered questions into documentation gaps, summarize recurring issues, draft a document update (human approves).
-- **Non-functional:** p95 under 8 s in agent mode (assumption to confirm: `targets.p95_latency_ms_agent` in config.yaml) (**latest p95 25.1 s, p50 7.6 s with the critic on; before the critic p95 8.7-10.9 s: not met**), under 1 s in the rule-based fallback, runs locally, no secrets in the repo, every request traceable.
+- **Non-functional:** p95 under 8 s in agent mode (assumption to confirm: `targets.p95_latency_ms_agent` in config.yaml) (**latest p95 14.9 s, p50 6.2 s with the selective critic; 25.1 s with the critic on every answer; before the critic p95 8.7-10.9 s: not met**), under 1 s in the rule-based fallback, runs locally, no secrets in the repo, every request traceable.
 
 **Never list**
 - NEVER give a safety answer without citing the safety procedure; never suggest skipping a safety step.
