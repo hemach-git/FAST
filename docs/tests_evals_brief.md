@@ -1,6 +1,6 @@
 # Tests + evals session brief: FAST v2 agents
 
-You are the **Tests + evals** session for FAST in `C:\Users\Chepuri\AI-Products\FAST`. Do **not commit**; the main session commits.
+You are the **Tests + evals** session for FAST in `C:\Users\Chepuri\AI-Products\Prototypes\FAST`. Do **not commit**; the main session commits.
 
 **You own:** `tests/*`, `evals/*`. **Do not edit** `app/*`, `config.yaml`, `docs/*`.
 

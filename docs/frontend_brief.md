@@ -2,7 +2,7 @@
 
 You are building the **Streamlit frontend only** for FAST. Floor supervisors ask plain-English questions. The backend routes each question to the right documentation (Safety procedures, Maintenance manuals, Quality standards) and returns a grounded, cited answer. Plant managers update documents (draft, then approve), review flagged answers, and look at query analytics to spot recurring floor issues.
 
-**Folder:** `C:\Users\Chepuri\AI-Products\FAST`. **Branch:** same folder, `main`. Touch only frontend files and **do not commit**; the main session commits.
+**Folder:** `C:\Users\Chepuri\AI-Products\Prototypes\FAST`. **Branch:** same folder, `main`. Touch only frontend files and **do not commit**; the main session commits.
 
 **You own:** `app/main.py`, `app/views/*`, `app/ui/*`, `.streamlit/config.toml`.
 **Do not edit:** `app/services/*`, `app/models/*`, `app/data/*`, `app/observability/*`, `app/config.py`, `config.yaml`, `tests/*`, `evals/*`.
