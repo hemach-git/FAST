@@ -29,7 +29,7 @@ Floor supervisors ask a plain-English question. A small team of **AI agents** ro
 ```bash
 pip install -r requirements.txt
 cp .env.example .env              # then edit it yourself
-streamlit run app/main.py         # http://localhost:8501  (DB auto-seeds on first run)
+streamlit run app/main.py         # http://localhost:8603  (DB auto-seeds on first run)
 ```
 
 **Sign in.** The first run creates three demo accounts (`admin`, `plant.manager`, `sup.chen`) with random passwords written to `data/initial_credentials.txt` (git-ignored; the path is also printed in the terminal and shown on the sign-in page). Set `FAST_ADMIN_PASSWORD` in `.env` to choose the administrator password. New users use *Request access* and an administrator approves them. `FAST_AUTH=off` turns sign-in off for local development only.
