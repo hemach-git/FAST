@@ -40,6 +40,15 @@ def get_config() -> dict:
     if os.getenv("OPENAI_MODEL"):                    # one env var switches every agent's model
         for role in ("router", "specialist", "synthesizer", "critic"):
             cfg["agents"][role]["model"] = os.environ["OPENAI_MODEL"].strip()
+    if cfg["llm"]["provider"] == "ollama":           # local model: every agent uses it, no API key needed
+        o = cfg.setdefault("ollama", {})
+        o["base_url"] = os.getenv("OLLAMA_BASE_URL", o.get("base_url", "http://localhost:11434/v1")).strip()
+        o["model"] = os.getenv("OLLAMA_MODEL", o.get("model", "gpt-oss:20b")).strip()
+        o["reasoning_effort"] = os.getenv("OLLAMA_REASONING", o.get("reasoning_effort") or "").strip() or None
+        for role in ("router", "specialist", "synthesizer", "critic"):
+            cfg["agents"][role]["model"] = o["model"]
+        cfg["llm"]["model"] = o["model"]
+        cfg["agents"]["timeout_s"] = max(cfg["agents"]["timeout_s"], int(o.get("timeout_s", 120)))
     if os.getenv("FAST_AUTH", "").strip().lower() in ("off", "false", "0"):   # local development only
         cfg["auth"]["enabled"] = False
     return cfg

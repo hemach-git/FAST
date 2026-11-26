@@ -1,4 +1,6 @@
-"""Configurable LLM client. provider = mock (default, offline, deterministic) | anthropic.
+"""Configurable LLM client. provider = mock (default, offline, deterministic) | openai | ollama (local) | anthropic.
+
+Agents (v2) run on openai or ollama; both use the OpenAI chat format (Ollama serves it at /v1).
 
 The anthropic path is wired but NOT yet validated (no key configured) - see README limitations.
 Retrieved document text is untrusted: it is wrapped in <doc> delimiters and the model is told
@@ -162,17 +164,31 @@ def chat(messages: list[dict], *, model: str, tools: list[dict] | None = None, j
     The mock provider has no chat: agents are only enabled for live providers (see app.agents.enabled).
     """
     p = provider()
-    if p == "openai":
+    if p in ("openai", "ollama"):
         return _openai_chat(messages, model, tools, json_mode, max_tokens, temperature)
     raise NotImplementedError(f"agent chat is not implemented for provider '{p}'")
 
 
-def _openai_chat(messages, model, tools, json_mode, max_tokens, temperature) -> ChatResult:
+def _client():
+    """OpenAI API, or a local Ollama server through its OpenAI-compatible endpoint (no API key, nothing leaves
+    the machine: Ollama ignores the key, the client library just needs a non-empty string)."""
     from openai import OpenAI  # lazy import
 
     cfg = get_config()
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=cfg["agents"]["timeout_s"])
+    if provider() == "ollama":
+        return OpenAI(base_url=cfg["ollama"]["base_url"], api_key="ollama", timeout=cfg["agents"]["timeout_s"])
+    return OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=cfg["agents"]["timeout_s"])
+
+
+def _openai_chat(messages, model, tools, json_mode, max_tokens, temperature) -> ChatResult:
+    cfg = get_config()
+    client = _client()
     kwargs: dict = dict(model=model, messages=messages, max_tokens=max_tokens, temperature=temperature)
+    if provider() == "ollama":
+        o = cfg["ollama"]
+        kwargs["max_tokens"] = max_tokens + int(o.get("extra_max_tokens", 0))   # reasoning shares the limit
+        if o.get("reasoning_effort") and model.startswith("gpt-oss"):
+            kwargs["reasoning_effort"] = o["reasoning_effort"]
     if tools:
         kwargs["tools"] = tools
     elif json_mode:

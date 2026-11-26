@@ -6,7 +6,7 @@ app:
   data_label: "SYNTHETIC DATA - for demonstration only"
 
 llm:
-  provider: mock            # mock | anthropic   (env LLM_PROVIDER overrides)
+  provider: mock            # mock | openai | ollama (local, see ollama:) | anthropic   (env LLM_PROVIDER overrides)
   model: claude-sonnet-5-5  # env LLM_MODEL overrides; ignored by mock
   max_tokens: 800
   temperature: 0.0
@@ -74,6 +74,14 @@ agents:
   # Selective since 2026-11-10: checking every answer added ~5 s and pushed live p95 to ~25 s.
   critic:      { enabled: true, run_on: selective, min_steps: 5, model: gpt-4o-mini, max_tokens: 700,
                  max_unsupported_ratio: 0.34 }
+
+# ---- local models via Ollama (LLM_PROVIDER=ollama): no API key, no data leaves the machine, $0 per question ----
+ollama:
+  base_url: http://localhost:11434/v1   # Ollama's OpenAI-compatible endpoint (env OLLAMA_BASE_URL)
+  model: gpt-oss:20b                     # used by every agent (env OLLAMA_MODEL)
+  reasoning_effort: medium               # gpt-oss only: low | medium | high (env OLLAMA_REASONING)
+  extra_max_tokens: 1000                 # headroom added to each call: reasoning shares the max_tokens limit
+  timeout_s: 120                         # per agent call; the first call loads the model (~15 s)
 
 # ---- document freshness (services/freshness.py) ----
 freshness:
